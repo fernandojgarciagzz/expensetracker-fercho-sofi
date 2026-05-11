@@ -546,6 +546,16 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.15);
     }
 
+    /* DASH FILTER — Todos / Juntos / Personal, drives the whole Resumen tab */
+    .dash-tabs {
+      display: flex; gap: 4px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 4px;
+      margin-bottom: 14px;
+    }
+    .dash-tabs .tab-btn { padding: 9px 4px; font-size: 11px; }
+
     .sec-card-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-light); margin-bottom: 12px; }
 
     /* CAT BARS */
@@ -556,8 +566,9 @@
       width: 28px; height: 28px; border-radius: 8px;
       background: var(--surface-2); display: flex;
       align-items: center; justify-content: center;
-      flex-shrink: 0; font-size: 13px;
+      flex-shrink: 0; color: var(--text-mid);
     }
+    .cb-icon svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
     .cb-info { flex: 1; min-width: 0; }
     .cb-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
@@ -582,6 +593,40 @@
     .lc-dot.cur { fill: var(--primary); r: 5; }
     .lc-dot-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; fill: var(--text-mid); text-anchor: middle; }
     .lc-dot-label.cur { fill: var(--primary); font-weight: 700; }
+
+    /* weekly budget reference line (Juntos view only) */
+    .lc-budget-line  { stroke: var(--warn); stroke-width: 1.5; stroke-dasharray: 5 3; opacity: 0.6; }
+    .lc-budget-label { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; fill: var(--warn); opacity: 0.9; }
+    .lc-dot.over       { fill: var(--warn); stroke: var(--warn); }
+    .lc-dot-label.over { fill: var(--warn); font-weight: 700; }
+
+    /* MONTHLY BAR CHART (stacked by category) */
+    .bar-chart-svg { width: 100%; overflow: visible; display: block; }
+    .bc-base { stroke: var(--border); stroke-width: 1; }
+    .bc-seg  { }  /* fill set inline per category */
+    .bc-val  { font-family: 'JetBrains Mono', monospace; font-size: 9px; fill: var(--text-mid); text-anchor: middle; }
+    .bc-val.cur { fill: var(--primary); font-weight: 700; }
+    .bc-lbl  { font-size: 10px; fill: var(--text-light); font-family: 'Sora', sans-serif; font-weight: 700; text-anchor: middle; text-transform: uppercase; }
+    .bc-lbl.cur { fill: var(--primary); }
+
+    .bc-legend { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 12px; }
+    .bc-leg-item { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-mid); }
+    .bc-leg-item i { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+    .bc-hit { fill: transparent; pointer-events: all; cursor: pointer; }
+
+    /* chart tooltip (monthly chart: hover desktop / tap mobile) */
+    .chart-tip {
+      position: absolute; left: 0; top: 0; z-index: 12; display: none;
+      min-width: 134px; max-width: 210px;
+      background: var(--surface-3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 9px 11px; box-shadow: var(--shadow);
+    }
+    .chart-tip.show { display: block; }
+    .chart-tip-head { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; font-weight: 700; margin-bottom: 5px; }
+    .chart-tip-head .ct-total { font-family: 'JetBrains Mono', monospace; color: var(--primary); }
+    .chart-tip-row { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--text-mid); margin-top: 4px; }
+    .chart-tip-row i { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+    .chart-tip-row .ct-amt { margin-left: auto; font-family: 'JetBrains Mono', monospace; color: var(--text); }
 
     /* DELETE */
     .exp-item { position: relative; flex-direction: column; align-items: stretch; padding: 0; overflow: hidden; }
@@ -775,6 +820,12 @@
     </div>
   </div>
 
+  <div class="dash-tabs" id="dash-filter">
+    <button class="tab-btn active" onclick="setDashTipo('Todos', this)">Todos</button>
+    <button class="tab-btn" onclick="setDashTipo('Juntos', this)">Juntos</button>
+    <button class="tab-btn" onclick="setDashTipo('Personal', this)">Personal</button>
+  </div>
+
   <div class="totals-row">
     <div class="total-card accent">
       <div class="tc-label">MXN este mes</div>
@@ -789,27 +840,26 @@
   </div>
 
   <div class="sec-card">
-    <div class="sec-card-title">Por categoría · MXN</div>
-    <div class="tabs">
-      <button class="tab-btn active" onclick="setCatTab('Juntos', this)">Juntos</button>
-      <button class="tab-btn" onclick="setCatTab('Personal', this)">Personal</button>
-      <button class="tab-btn" onclick="setCatTab('Total', this)">Total</button>
-    </div>
+    <div class="sec-card-title" id="cat-title">Por categoría · MXN · este mes</div>
     <div class="cat-bars" id="cat-bars">
       <div class="loading-dots"><span></span><span></span><span></span></div>
     </div>
   </div>
 
   <div class="sec-card">
-    <div class="sec-card-title">Últimos 6 meses · MXN</div>
-    <div class="tabs">
-      <button class="tab-btn active" onclick="setMonthTab('Juntos', this)">Juntos</button>
-      <button class="tab-btn" onclick="setMonthTab('Personal', this)">Personal</button>
-      <button class="tab-btn" onclick="setMonthTab('Total', this)">Total</button>
-    </div>
+    <div class="sec-card-title">Últimas 8 semanas · MXN</div>
     <div class="line-chart-wrap">
-      <svg class="line-chart-svg" id="month-chart" height="140"></svg>
+      <svg class="line-chart-svg" id="week-chart" height="140"></svg>
     </div>
+  </div>
+
+  <div class="sec-card">
+    <div class="sec-card-title">Últimos 6 meses por categoría · MXN</div>
+    <div class="line-chart-wrap">
+      <svg class="bar-chart-svg" id="month-chart" height="140"></svg>
+      <div class="chart-tip" id="month-tip"></div>
+    </div>
+    <div class="bc-legend" id="month-legend"></div>
   </div>
 </main>
 
@@ -861,14 +911,30 @@
     { iconId: 'dots',      label: 'Otros',        emoji: '🔧'  },
   ];
 
+  // one stable color per category (same index as CATS) — mid-tone so it reads
+  // on both the dark and the light background. Used in "Por categoría" bars and
+  // the stacked monthly chart so a color means the same thing in both.
+  const CAT_COLORS = ['#E07848','#5BA85B','#4F8FC7','#B266C9','#D99A2B','#D85C5C','#7B83C9','#3FAEA0','#5BB8D9','#C96FA0','#A8895E','#8A8A8A'];
+  const CAT_COLOR_BY_LABEL = {}, CAT_ICON_BY_LABEL = {};
+  CATS.forEach((c, i) => { CAT_COLOR_BY_LABEL[c.label] = CAT_COLORS[i]; CAT_ICON_BY_LABEL[c.label] = c.iconId; });
+  const catColor = label => CAT_COLOR_BY_LABEL[label] || CAT_COLORS[CAT_COLORS.length - 1];   // unknown → Otros gray
+  const catIcon  = label => CAT_ICON_BY_LABEL[label]  || 'dots';                                // unknown → Otros icon
+
   let selCat = null, selCur = 'MXN', selTipo = null;
-  let catTab   = 'Juntos';
-  let monthTab = 'Juntos';
+  let dashTipo = 'Todos';   // Todos | Juntos | Personal — drives the whole Resumen tab
   let who    = localStorage.getItem('gastos_who')   || 'Fernando';
   let theme  = localStorage.getItem('gastos_theme') || 'dark';
   let filter = 'all';
   let data   = [];
   let busy   = false;
+
+  // USD→MXN daily rates, cached across sessions: { rates:{'YYYY-MM-DD':num}, from, thru }
+  let fxCache;
+  try { fxCache = JSON.parse(localStorage.getItem('gastos_fx')); } catch (_) { fxCache = null; }
+  if (!fxCache || typeof fxCache !== 'object' || !fxCache.rates) fxCache = { rates: {}, from: null, thru: null };
+
+  // monthly-chart tooltip state (set by renderMonthBars, read by the hover/tap handlers)
+  let monthBars = [], monthGeom = null, tipPinned = false, tipIndex = -1;
 
   /* ── INIT ── */
   function init() {
@@ -888,6 +954,51 @@
     const now = new Date();
     const ms  = now.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
     document.getElementById('dash-month').textContent = ms.charAt(0).toUpperCase() + ms.slice(1);
+
+    // monthly chart: hover (desktop) or tap (touch) a bar to see its breakdown
+    const mc = document.getElementById('month-chart');
+    mc.addEventListener('mouseover', e => { const r = e.target.closest && e.target.closest('.bc-hit'); if (r && !tipPinned) showMonthTip(+r.dataset.i, false); });
+    mc.addEventListener('mouseout',  e => {
+      const r = e.target.closest && e.target.closest('.bc-hit'); if (!r || tipPinned) return;
+      const to = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.bc-hit');
+      if (!to) hideMonthTip();
+    });
+    mc.addEventListener('click', e => {
+      const r = e.target.closest && e.target.closest('.bc-hit'); if (!r) return;
+      const i = +r.dataset.i;
+      (tipPinned && tipIndex === i) ? hideMonthTip() : showMonthTip(i, true);
+    });
+    document.getElementById('month-tip').addEventListener('click', hideMonthTip);
+    document.addEventListener('click', e => {
+      if (tipPinned && !e.target.closest('#month-chart') && !e.target.closest('#month-tip')) hideMonthTip();
+    });
+  }
+
+  function showMonthTip(i, pin) {
+    const m = monthBars[i]; if (!m || !monthGeom) return;
+    const tip = document.getElementById('month-tip');
+    tip.innerHTML = monthTipHTML(m);
+    tip.classList.add('show');
+    tipPinned = !!pin; tipIndex = i;
+    // position above the bar (in user units ≈ px, since viewBox width == element width)
+    const g = monthGeom, w = tip.parentElement.clientWidth;
+    const cx = g.padL + g.slot * i + g.slot / 2;
+    const topYpx = g.baseY - (m.total / g.maxVal) * g.chartH;
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    tip.style.left = Math.max(2, Math.min(cx - tw / 2, w - tw - 2)) + 'px';
+    const t = topYpx - th - 6;
+    tip.style.top = (t < 2 ? topYpx + 6 : t) + 'px';
+  }
+
+  function hideMonthTip() { document.getElementById('month-tip').classList.remove('show'); tipPinned = false; tipIndex = -1; }
+
+  function monthTipHTML(m) {
+    const rows = CATS.map(c => c.label).filter(l => m.segs[l])
+      .sort((a, b) => m.segs[b] - m.segs[a])
+      .map(l => `<div class="chart-tip-row"><i style="background:${catColor(l)}"></i>${esc(l)}<span class="ct-amt">$${fmt(m.segs[l])}</span></div>`)
+      .join('');
+    return `<div class="chart-tip-head"><span>${esc(m.full)}</span><span class="ct-total">$${fmt(m.total)}</span></div>` +
+           (rows || `<div class="chart-tip-row" style="color:var(--text-light)">Sin gastos</div>`);
   }
 
   /* ── THEME ── */
@@ -906,7 +1017,9 @@
     if (moon) moon.style.display = t === 'light' ? 'block' : 'none';
   }
 
-  const WEEKLY_BUDGET = 2000; // MXN
+  const WEEKLY_BUDGET = 2000;  // MXN, per Mon–Sun week
+  const WEEKS_SHOWN   = 8;     // weekly chart range
+  const USD_MXN_FALLBACK = 18; // used only if the FX API is unreachable and nothing is cached
 
   /* ── TIPO ── */
   function setTipo(t, btn) {
@@ -944,7 +1057,12 @@
     if (v === 'dashboard' || v === 'history') loadData();
   }
 
-  function todayStr() { return new Date().toISOString().split('T')[0]; }
+  // Local date as YYYY-MM-DD — never use toISOString() here, it's UTC and
+  // shifts evening entries (UTC-6) to the next day.
+  function dateStr(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  function todayStr() { return dateStr(new Date()); }
 
   /* ── SUBMIT ── */
   async function submitGasto() {
@@ -962,18 +1080,33 @@
     btn.disabled = true; btn.textContent = 'Guardando…';
 
     try {
-      await fetch(APPS_SCRIPT_URL, {
-        method: 'POST', mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fecha: fec, monto: mon, moneda: selCur,
-          categoria: CATS[selCat].label, emoji: CATS[selCat].emoji,
-          descripcion: des, quien: who, tipo: selTipo }),
-      });
-    } catch (_) {}
+      await postToScript({ fecha: fec, monto: mon, moneda: selCur,
+        categoria: CATS[selCat].label, emoji: CATS[selCat].emoji,
+        descripcion: des, quien: who, tipo: selTipo });
+      toast('✅ Gasto registrado');
+      resetForm();
+    } catch (e) {
+      toast('⚠️ No se guardó — revisa tu conexión e intenta otra vez', 'warning');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Registrar gasto';
+    }
+  }
 
-    toast('✅ Gasto registrado');
-    resetForm();
-    btn.disabled = false; btn.textContent = 'Registrar gasto';
+  // POST to Apps Script. text/plain keeps it a "simple request" (no CORS
+  // preflight, which Apps Script can't answer) — the script reads the raw
+  // body either way. We don't use no-cors so we can actually see failures:
+  // a network drop rejects, and {success:false} from doPost throws.
+  async function postToScript(payload) {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    let json = null;
+    try { json = await res.json(); } catch (_) { /* doPost returned plain text — assume ok */ }
+    if (json && json.success === false) throw new Error(json.error || 'script error');
+    return json;
   }
 
   function resetForm() {
@@ -997,6 +1130,8 @@
         data = [...json.data].reverse();
         renderDash();
         renderHistory();
+        // top up USD→MXN rates in the background, then re-render if anything changed
+        ensureFxRates().then(changed => { if (changed) renderDash(); });
       }
     } catch (e) {
       document.getElementById('expense-list').innerHTML =
@@ -1004,41 +1139,114 @@
     } finally { busy = false; }
   }
 
+  /* ── FX (USD → MXN at the spend date) ── */
+  // MXN-equivalent of an expense: MXN rows pass through; USD rows are scaled by
+  // the rate for their date (or the nearest business day we have cached).
+  function mxnAmount(e) {
+    const amt = num(e.Monto);
+    return e.Moneda === 'USD' ? amt * usdRateFor(str10(e.Fecha)) : amt;
+  }
+
+  function usdRateFor(d) {
+    const r = fxCache.rates;
+    if (r[d]) return r[d];
+    const base = new Date(d + 'T12:00:00');
+    if (!isNaN(base)) {
+      for (let i = 1; i <= 8; i++) { const x = new Date(base); x.setDate(base.getDate() - i); if (r[dateStr(x)]) return r[dateStr(x)]; }
+      for (let i = 1; i <= 8; i++) { const x = new Date(base); x.setDate(base.getDate() + i); if (r[dateStr(x)]) return r[dateStr(x)]; }
+    }
+    const ks = Object.keys(r).sort();
+    return ks.length ? r[ks[ks.length - 1]] : USD_MXN_FALLBACK;
+  }
+
+  // Pull any missing daily USD→MXN rates from frankfurter.app (ECB data, free,
+  // no key, CORS-enabled) and cache them in localStorage. At most one request
+  // per calendar day. Returns true if new rates were stored. Best-effort.
+  async function ensureFxRates() {
+    const usdDates = data.filter(e => e.Moneda === 'USD').map(e => str10(e.Fecha)).filter(Boolean);
+    if (!usdDates.length) return false;
+
+    const today  = todayStr();
+    const minUsd = usdDates.reduce((m, d) => (d < m ? d : m), today);
+    const b = new Date(minUsd + 'T12:00:00'); b.setDate(b.getDate() - 10);   // pad back over weekends/holidays
+    const start = dateStr(b);
+
+    if (fxCache.thru === today && fxCache.from && fxCache.from <= start) return false;  // already covered today
+
+    try {
+      const res = await fetch(`https://api.frankfurter.app/${start}..${today}?from=USD&to=MXN`);
+      if (!res.ok) return false;
+      const j = await res.json();
+      if (!j || !j.rates) return false;
+      let added = false;
+      for (const d in j.rates) {
+        const v = j.rates[d] && j.rates[d].MXN;
+        if (v && fxCache.rates[d] !== v) { fxCache.rates[d] = v; added = true; }
+      }
+      if (!fxCache.from || start < fxCache.from) fxCache.from = start;
+      fxCache.thru = today;
+      localStorage.setItem('gastos_fx', JSON.stringify(fxCache));
+      return added;
+    } catch (_) { return false; }
+  }
+
   /* ── DASHBOARD ── */
+  // dashTipo ('Todos' | 'Juntos' | 'Personal') scopes the headline cards,
+  // the category breakdown and the weekly chart. The budget card is always
+  // Juntos by definition, so it ignores the filter.
+  function setDashTipo(tipo, btn) {
+    dashTipo = tipo;
+    document.querySelectorAll('#dash-filter .tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderDash();
+  }
+
   function renderDash() {
     const now = new Date();
-    const cur = data.filter(e => {
+    const monthExp = data.filter(e => {
       const d = new Date(str10(e.Fecha) + 'T12:00:00');
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     });
+    const scoped = filterByTipo(monthExp, dashTipo);
 
-    const mxn = cur.filter(e => e.Moneda === 'MXN');
-    const usd = cur.filter(e => e.Moneda === 'USD');
-    const tmx = mxn.reduce((s, e) => s + num(e.Monto), 0);
-    const tus = usd.reduce((s, e) => s + num(e.Monto), 0);
+    // "Por categoría" only ever covers the current calendar month — say so
+    const mn = now.toLocaleDateString('es-MX', { month: 'long' });
+    document.getElementById('cat-title').textContent = `Por categoría · MXN · ${mn.charAt(0).toUpperCase() + mn.slice(1)}`;
 
-    document.getElementById('total-mxn').textContent  = '$' + fmt(tmx);
-    document.getElementById('total-usd').textContent  = '$' + fmt(tus);
-    document.getElementById('count-mxn').textContent  = mxn.length + ' gastos';
-    document.getElementById('count-usd').textContent  = usd.length + ' gastos';
+    const mxn = scoped.filter(e => e.Moneda === 'MXN');
+    const usd = scoped.filter(e => e.Moneda === 'USD');
 
-    renderCatBars(filterByTipo(mxn, catTab));
-    renderBudget();
-    renderMonthChart(monthTab);
+    // headline cards stay literal-per-currency (what you actually spent in each)
+    document.getElementById('total-mxn').textContent = '$' + fmt(mxn.reduce((s, e) => s + num(e.Monto), 0));
+    document.getElementById('total-usd').textContent = '$' + fmt(usd.reduce((s, e) => s + num(e.Monto), 0));
+    document.getElementById('count-mxn').textContent = mxn.length + ' gastos';
+    document.getElementById('count-usd').textContent = usd.length + ' gastos';
+
+    renderCatBars(scoped);         // month + tipo; MXN + converted USD
+    renderBudget();                // always Juntos — unaffected by dashTipo
+    renderWeekChart(dashTipo);
+    renderMonthBars(dashTipo);
   }
 
-  function filterByTipo(expenses, tab) {
-    if (tab === 'Total') return expenses;
-    return expenses.filter(e => (e.Tipo || 'Personal') === tab);
+  // 'Todos' (or anything that isn't a known tipo) → no filtering.
+  // Legacy rows with no Tipo count as 'Personal'.
+  function filterByTipo(expenses, tipo) {
+    if (tipo !== 'Juntos' && tipo !== 'Personal') return expenses;
+    return expenses.filter(e => (e.Tipo || 'Personal') === tipo);
+  }
+
+  // Monday 00:00 of the week containing d (weeks run Mon–Sun, local time).
+  function getWeekStart(d) {
+    const x   = new Date(d);
+    const day = x.getDay();                          // 0=Sun…6=Sat
+    x.setDate(x.getDate() + (day === 0 ? -6 : 1 - day));
+    x.setHours(0, 0, 0, 0);
+    return x;
   }
 
   function getWeekBounds() {
-    // Week: Mon–Sun
-    const now  = new Date();
-    const day  = now.getDay();                        // 0=Sun…6=Sat
-    const diffToMon = (day === 0 ? -6 : 1 - day);    // days back to Monday
-    const mon  = new Date(now); mon.setDate(now.getDate() + diffToMon); mon.setHours(0,0,0,0);
-    const sun  = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23,59,59,999);
+    const mon = getWeekStart(new Date());
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23, 59, 59, 999);
     return { mon, sun };
   }
 
@@ -1046,13 +1254,12 @@
     const { mon, sun } = getWeekBounds();
 
     const weekExp = data.filter(e => {
-      if (e.Moneda !== 'MXN') return false;
       if ((e.Tipo || '').toLowerCase() !== 'juntos') return false;
       const d = new Date(str10(e.Fecha) + 'T12:00:00');
       return d >= mon && d <= sun;
     });
 
-    const spent = weekExp.reduce((s, e) => s + num(e.Monto), 0);
+    const spent = weekExp.reduce((s, e) => s + mxnAmount(e), 0);   // MXN + converted USD
     const remaining = WEEKLY_BUDGET - spent;
     const pct = Math.min((spent / WEEKLY_BUDGET) * 100, 100).toFixed(1);
 
@@ -1075,30 +1282,11 @@
     document.getElementById('budget-spent').textContent = '$' + fmt(spent) + ' gastados juntos';
   }
 
-  function setCatTab(tab, btn) {
-    catTab = tab;
-    btn.closest('.tabs').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const now = new Date();
-    const mxn = data.filter(e => {
-      const d = new Date(str10(e.Fecha) + 'T12:00:00');
-      return e.Moneda === 'MXN' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    });
-    renderCatBars(filterByTipo(mxn, catTab));
-  }
-
-  function setMonthTab(tab, btn) {
-    monthTab = tab;
-    btn.closest('.tabs').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderMonthChart(monthTab);
-  }
-
   function renderCatBars(expenses) {
     const map = {};
     expenses.forEach(e => {
       const k = (e.Emoji || '💸') + '||' + (e.Categoria || 'Otros');
-      map[k] = (map[k] || 0) + num(e.Monto);
+      map[k] = (map[k] || 0) + mxnAmount(e);
     });
     const sorted = Object.entries(map).sort((a,b) => b[1]-a[1]);
     const max = sorted.length ? sorted[0][1] : 1;
@@ -1110,94 +1298,180 @@
     }
 
     el.innerHTML = sorted.map(([k, v]) => {
-      const [emoji, cat] = k.split('||');
+      const cat = k.split('||')[1] || 'Otros';
       return `<div class="cb-item">
-        <div class="cb-icon">${emoji}</div>
+        <div class="cb-icon" style="color:${catColor(cat)}"><svg viewBox="0 0 24 24"><use href="#ic-${catIcon(cat)}"/></svg></div>
         <div class="cb-info">
           <div class="cb-header">
             <span class="cb-name">${esc(cat)}</span>
             <span class="cb-amt">$${fmt(v)}</span>
           </div>
-          <div class="cb-track"><div class="cb-fill" style="width:${((v/max)*100).toFixed(1)}%"></div></div>
+          <div class="cb-track"><div class="cb-fill" style="width:${((v/max)*100).toFixed(1)}%;background:${catColor(cat)}"></div></div>
         </div>
       </div>`;
     }).join('');
   }
 
-  function renderMonthChart(tab) {
-    const mxnAll = data.filter(e => e.Moneda === 'MXN');
-    const filtered = filterByTipo(mxnAll, tab);
+  // Last WEEKS_SHOWN Mon–Sun weeks (MXN + converted USD), scoped by tipo. In
+  // 'Juntos' mode it also draws the $2,000 weekly-budget line and tints any
+  // week that crossed it.
+  function renderWeekChart(tipo) {
+    const exp = filterByTipo(data, tipo);
 
+    // bucket each expense into its Monday-key
     const map = {};
-    filtered.forEach(e => {
-      const k = str10(e.Fecha).slice(0, 7);
-      if (k) map[k] = (map[k] || 0) + num(e.Monto);
+    exp.forEach(e => {
+      const d = new Date(str10(e.Fecha) + 'T12:00:00');
+      if (isNaN(d)) return;
+      const k = dateStr(getWeekStart(d));
+      map[k] = (map[k] || 0) + mxnAmount(e);
     });
 
-    const now    = new Date();
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const d   = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = d.toISOString().slice(0, 7);
-      const lbl = d.toLocaleDateString('es-MX', { month: 'short' })
-                   .replace('.','').slice(0,3).toUpperCase();
-      months.push({ key, lbl, total: map[key] || 0, isCur: i === 0 });
+    const thisMon = getWeekStart(new Date());
+    const weeks   = [];
+    for (let i = WEEKS_SHOWN - 1; i >= 0; i--) {
+      const mon = new Date(thisMon); mon.setDate(thisMon.getDate() - i * 7);
+      const key = dateStr(mon);
+      weeks.push({ mon, total: map[key] || 0, isCur: i === 0 });
     }
 
-    const svg    = document.getElementById('month-chart');
+    const showBudget = (tipo === 'Juntos');
+
+    const svg    = document.getElementById('week-chart');
     const W      = svg.getBoundingClientRect().width || 320;
     const H      = 140;
     const padL   = 38, padR = 12, padT = 24, padB = 32;
     const chartW = W - padL - padR;
     const chartH = H - padT - padB;
 
-    const maxVal = Math.max(...months.map(m => m.total), 1);
-    const step   = chartW / (months.length - 1);
+    let maxVal = Math.max(...weeks.map(w => w.total), 1);
+    if (showBudget) maxVal = Math.max(maxVal, WEEKLY_BUDGET);   // keep the $2k line on-chart
+    const step = chartW / (weeks.length - 1);
 
-    // helpers
     const cx = i => padL + i * step;
     const cy = v => padT + chartH - (v / maxVal) * chartH;
 
-    // y-axis grid: 3 lines
-    const gridVals = [0, maxVal * 0.5, maxVal];
     let out = '';
 
-    gridVals.forEach(v => {
+    // y-axis grid: 0, mid, max
+    [0, maxVal * 0.5, maxVal].forEach(v => {
       const y = cy(v);
       out += `<line class="lc-grid-line" x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}" stroke-dasharray="${v === 0 ? 'none' : '3 3'}"/>`;
-      if (v > 0) {
-        out += `<text class="lc-grid-label" x="${padL - 4}" y="${y + 3}" text-anchor="end">$${fmtK(v)}</text>`;
-      }
+      if (v > 0) out += `<text class="lc-grid-label" x="${padL - 4}" y="${y + 3}" text-anchor="end">$${fmtK(v)}</text>`;
     });
 
-    // area fill
-    const pts    = months.map((m, i) => `${cx(i)},${cy(m.total)}`).join(' ');
-    const areaD  = `M${cx(0)},${cy(0)} ` +
-                   months.map((m, i) => `L${cx(i)},${cy(m.total)}`).join(' ') +
-                   ` L${cx(months.length-1)},${cy(0)} Z`;
+    // weekly-budget reference line (Juntos only)
+    if (showBudget) {
+      const y = cy(WEEKLY_BUDGET);
+      out += `<line class="lc-budget-line" x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}"/>`;
+      out += `<text class="lc-budget-label" x="${W - padR}" y="${y - 4}" text-anchor="end">budget $${fmtK(WEEKLY_BUDGET)}</text>`;
+    }
+
+    // area + line
+    const areaD = `M${cx(0)},${cy(0)} ` +
+                  weeks.map((w, i) => `L${cx(i)},${cy(w.total)}`).join(' ') +
+                  ` L${cx(weeks.length - 1)},${cy(0)} Z`;
     out += `<path class="lc-area" d="${areaD}" fill="var(--primary)"/>`;
+    out += `<path class="lc-line" d="${weeks.map((w, i) => `${i === 0 ? 'M' : 'L'}${cx(i)},${cy(w.total)}`).join(' ')}"/>`;
 
-    // line
-    const lineD = months.map((m, i) => `${i === 0 ? 'M' : 'L'}${cx(i)},${cy(m.total)}`).join(' ');
-    out += `<path class="lc-line" d="${lineD}"/>`;
-
-    // dots + labels
-    months.forEach((m, i) => {
-      const x = cx(i), y = cy(m.total);
-      const r = m.isCur ? 5 : 3.5;
-      out += `<circle class="lc-dot${m.isCur ? ' cur' : ''}" cx="${x}" cy="${y}" r="${r}"/>`;
-
-      if (m.total > 0) {
-        const labelY = y - 9;
-        out += `<text class="lc-dot-label${m.isCur ? ' cur' : ''}" x="${x}" y="${labelY}">$${fmtK(m.total)}</text>`;
-      }
-
-      // month label on x axis
-      out += `<text class="lc-month-label${m.isCur ? ' cur' : ''}" x="${x}" y="${H - 4}">${m.lbl}</text>`;
+    // dots + value labels + week (Monday) labels
+    weeks.forEach((w, i) => {
+      const x = cx(i), y = cy(w.total);
+      const over = showBudget && w.total > WEEKLY_BUDGET;
+      const cls  = (w.isCur ? ' cur' : '') + (over ? ' over' : '');
+      out += `<circle class="lc-dot${cls}" cx="${x}" cy="${y}" r="${w.isCur ? 5 : 3.5}"/>`;
+      if (w.total > 0) out += `<text class="lc-dot-label${cls}" x="${x}" y="${y - 9}">$${fmtK(w.total)}</text>`;
+      const lbl = w.mon.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }).replace('.', '');
+      out += `<text class="lc-month-label${w.isCur ? ' cur' : ''}" x="${x}" y="${H - 4}">${lbl}</text>`;
     });
 
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     svg.innerHTML = out;
+  }
+
+  // Last 6 calendar months as stacked bars (MXN + converted USD), broken down
+  // by category and scoped by tipo. Current month gets a primary tick + label;
+  // no budget line (the budget is a weekly concept). A legend lists the
+  // categories that appear in the window.
+  function renderMonthBars(tipo) {
+    const exp = filterByTipo(data, tipo);
+
+    // byMonth: { 'YYYY-MM': { categoriaLabel: mxnAmount } } — unknown categories fold into 'Otros'
+    const byMonth = {};
+    exp.forEach(e => {
+      const mk = str10(e.Fecha).slice(0, 7);
+      if (!mk) return;
+      const cat = CAT_COLOR_BY_LABEL[e.Categoria] ? e.Categoria : 'Otros';
+      (byMonth[mk] || (byMonth[mk] = {}))[cat] = (byMonth[mk][cat] || 0) + mxnAmount(e);
+    });
+
+    const now    = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d    = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key  = dateStr(d).slice(0, 7);
+      const lbl  = d.toLocaleDateString('es-MX', { month: 'short' }).replace('.', '').slice(0, 3).toUpperCase();
+      const ful  = d.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+      const segs = byMonth[key] || {};
+      const total = Object.values(segs).reduce((s, v) => s + v, 0);
+      months.push({ lbl, full: ful.charAt(0).toUpperCase() + ful.slice(1), segs, total, isCur: i === 0 });
+    }
+
+    // legend: categories present anywhere in the window, biggest total first
+    const legTot = {};
+    months.forEach(m => { for (const c in m.segs) legTot[c] = (legTot[c] || 0) + m.segs[c]; });
+    const legendCats = Object.keys(legTot).sort((a, b) => legTot[b] - legTot[a]);
+
+    const svg    = document.getElementById('month-chart');
+    const W      = svg.getBoundingClientRect().width || 320;
+    const H      = 140;
+    const padL   = 8, padR = 8, padT = 22, padB = 24;
+    const chartW = W - padL - padR;
+    const chartH = H - padT - padB;
+
+    const maxVal = Math.max(...months.map(m => m.total), 1);
+    const slot   = chartW / months.length;
+    const bw     = Math.min(slot * 0.5, 34);
+    const baseY  = padT + chartH;
+    const catOrder = CATS.map(c => c.label);   // stable bottom→top stacking order
+    monthGeom = { padL, slot, baseY, chartH, maxVal };   // for tooltip positioning
+
+    let out = `<line class="bc-base" x1="${padL}" x2="${W - padR}" y1="${baseY}" y2="${baseY}"/>`;
+
+    months.forEach((m, i) => {
+      const cx    = padL + slot * i + slot / 2;
+      const x     = cx - bw / 2;
+      const fullH = (m.total / maxVal) * chartH;
+      const topY  = baseY - fullH;
+
+      if (fullH > 0) {
+        // rounded outer shape via clip; square segments inside
+        out += `<clipPath id="mbc${i}"><rect x="${x}" y="${topY.toFixed(1)}" width="${bw}" height="${fullH.toFixed(1)}" rx="3"/></clipPath>`;
+        out += `<g clip-path="url(#mbc${i})">`;
+        let y = baseY;
+        catOrder.forEach(cat => {
+          const amt = m.segs[cat];
+          if (!amt) return;
+          const segH = (amt / maxVal) * chartH;
+          y -= segH;
+          out += `<rect class="bc-seg" x="${x}" y="${y.toFixed(1)}" width="${bw}" height="${(segH + 0.5).toFixed(1)}" fill="${catColor(cat)}"/>`;
+        });
+        out += `</g>`;
+      }
+
+      if (m.total > 0) out += `<text class="bc-val${m.isCur ? ' cur' : ''}" x="${cx}" y="${(topY - 5).toFixed(1)}">$${fmtK(m.total)}</text>`;
+      if (m.isCur)     out += `<rect x="${x}" y="${(baseY + 3).toFixed(1)}" width="${bw}" height="2.5" rx="1" fill="var(--primary)"/>`;
+      out += `<text class="bc-lbl${m.isCur ? ' cur' : ''}" x="${cx}" y="${H - 6}">${m.lbl}</text>`;
+      // full-slot transparent hit-area on top, so even short bars are easy to hover/tap
+      out += `<rect class="bc-hit" x="${(padL + slot * i).toFixed(1)}" y="0" width="${slot.toFixed(1)}" height="${H}" data-i="${i}"/>`;
+    });
+
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = out;
+    monthBars = months;
+
+    document.getElementById('month-legend').innerHTML =
+      legendCats.map(c => `<span class="bc-leg-item"><i style="background:${catColor(c)}"></i>${esc(c)}</span>`).join('');
   }
 
   /* ── HISTORY ── */
@@ -1267,19 +1541,19 @@
     item.style.pointerEvents = 'none';
 
     // remove from local data array by timestamp
+    const snapshot = data;
     data = data.filter(e => (e.Timestamp || '') !== timestamp);
 
     try {
-      await fetch(APPS_SCRIPT_URL, {
-        method: 'POST', mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', timestamp }),
-      });
-    } catch (_) {}
-
-    toast('🗑️ Gasto eliminado');
-    renderHistory();
-    renderDash();
+      await postToScript({ action: 'delete', timestamp });
+      toast('🗑️ Gasto eliminado');
+      renderHistory();
+      renderDash();
+    } catch (e) {
+      data = snapshot;                 // undo — the row is still on the sheet
+      renderHistory();
+      toast('⚠️ No se pudo borrar — intenta otra vez', 'warning');
+    }
   }
 
   /* ── VOICE INPUT ── */
@@ -1384,7 +1658,7 @@
     // ── 4. DATE ────────────────────────────────────────────
     const detectedDate = parseDateFromVoice(lower);
     if (detectedDate) {
-      document.getElementById('fecha').value = detectedDate.toISOString().split('T')[0];
+      document.getElementById('fecha').value = dateStr(detectedDate);
     }
 
     // ── FILL FORM ──────────────────────────────────────────
