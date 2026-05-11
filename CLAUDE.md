@@ -1,7 +1,7 @@
-# Expense Tracker — Fer & Sofi
+# De Dos — gastos de Fer & Sofi
 
 ## Qué es
-App de gastos compartidos para Fernando y Sofi. Mobile-first, dark mode por default.
+"De Dos" — app de gastos compartidos para Fernando y Sofi. Mobile-first, dark mode por default.
 Live en: https://fernandojgarciagzz.github.io/expensetracker-fercho-sofi
 
 ## Stack
