@@ -287,14 +287,20 @@
       color: var(--text-light); margin-bottom: 12px;
     }
 
-    .amount-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .amount-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+
+    .amount-prefix {
+      font-family: var(--font-display); font-size: 28px; font-weight: 500;
+      color: var(--text-light); line-height: 1; flex-shrink: 0; user-select: none;
+    }
 
     .amount-input {
       flex: 1;
-      font-family: var(--font-mono);
-      font-size: 42px; font-weight: 700; color: var(--text);
+      font-family: var(--font-display);
+      font-size: 54px; font-weight: 600; color: var(--text);
       border: none; background: transparent; outline: none;
-      min-width: 0; line-height: 1;
+      min-width: 0; line-height: 1; letter-spacing: -0.5px;
+      caret-color: var(--primary);
       -moz-appearance: textfield;
     }
     .amount-input::-webkit-outer-spin-button,
@@ -372,7 +378,7 @@
       cursor: pointer;
       display: flex; flex-direction: column;
       align-items: center; gap: 5px;
-      transition: all var(--t);
+      transition: border-color var(--t), background var(--t), box-shadow var(--t), transform var(--spring);
     }
 
     .tipo-btn svg { width: 20px; height: 20px; stroke: var(--text-light); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--t); }
@@ -380,54 +386,56 @@
     .tipo-btn .t-sub { font-size: 9px; color: var(--text-light); opacity: 0.7; }
     .tipo-btn:active { transform: scale(0.96); }
 
-    .tipo-btn.selected { border-color: var(--primary); background: var(--primary-dim); }
+    .tipo-btn.selected {
+      border-color: var(--primary); background: var(--primary-dim);
+      box-shadow: 0 4px 18px var(--primary-glow);
+    }
     .tipo-btn.selected svg { stroke: var(--primary); }
     .tipo-btn.selected .t-label { color: var(--primary); }
 
     /* BUDGET CARD */
     .budget-card {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: 18px 16px;
-      margin-bottom: 12px; box-shadow: var(--card-edge), var(--shadow);
+      border-radius: var(--radius-lg); padding: 18px 18px 16px;
+      margin-bottom: var(--sec-gap); box-shadow: var(--card-edge), var(--shadow);
+      transition: border-color var(--t), background var(--t);
+    }
+    .budget-card.is-over {
+      border-color: color-mix(in srgb, var(--warn) 35%, var(--border));
+      background: linear-gradient(180deg, color-mix(in srgb, var(--warn) 8%, var(--surface)), var(--surface));
     }
 
-    .budget-header {
-      display: flex; justify-content: space-between;
-      align-items: flex-start; margin-bottom: 14px;
+    .budget-top {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 8px;
     }
+    .budget-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.3px; color: var(--text-light); }
+    .budget-dates { font-family: var(--font-mono); font-size: 10px; color: var(--text-light); }
 
-    .budget-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-light); margin-bottom: 4px; }
-
-    .budget-dates { font-size: 10px; color: var(--text-light); }
-
-    .budget-remaining {
-      text-align: right;
-    }
-
+    .budget-hero { text-align: center; padding: 4px 0 14px; }
     .budget-remaining-amount {
-      font-family: var(--font-mono);
-      font-size: 22px; font-weight: 700; letter-spacing: -0.5px;
+      font-family: var(--font-display);
+      font-size: 46px; font-weight: 600; line-height: 1; letter-spacing: -1px;
+      color: var(--success);
     }
-
-    .budget-remaining-amount.ok { color: var(--success); }
     .budget-remaining-amount.warn { color: #E0B048; }
     .budget-remaining-amount.over { color: var(--warn); }
-
-    .budget-remaining-label { font-size: 9px; color: var(--text-light); margin-top: 2px; text-align: right; }
+    .budget-remaining-label { font-size: 10px; color: var(--text-light); margin-top: 7px; }
 
     .budget-track {
-      height: 8px; background: var(--surface-3);
-      border-radius: 4px; overflow: hidden; margin-bottom: 10px;
+      height: 11px; background: var(--surface-3);
+      border-radius: 6px; overflow: hidden; margin-bottom: 9px;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.16);
     }
 
     .budget-fill {
-      height: 100%; border-radius: 4px;
-      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+      height: 100%; border-radius: 6px;
+      transition: width 0.9s cubic-bezier(0.34, 1.08, 0.64, 1);
     }
 
-    .budget-fill.ok   { background: linear-gradient(90deg, rgba(61,186,122,0.4), var(--success)); }
-    .budget-fill.warn { background: linear-gradient(90deg, rgba(224,176,72,0.4), #E0B048); }
-    .budget-fill.over { background: linear-gradient(90deg, rgba(224,96,96,0.4), var(--warn)); }
+    .budget-fill.ok   { background: linear-gradient(90deg, color-mix(in srgb, var(--success) 42%, transparent), var(--success)); }
+    .budget-fill.warn { background: linear-gradient(90deg, rgba(224,176,72,0.42), #E0B048); }
+    .budget-fill.over { background: linear-gradient(90deg, color-mix(in srgb, var(--warn) 42%, transparent), var(--warn)); }
 
     .budget-footer {
       display: flex; justify-content: space-between;
@@ -437,27 +445,25 @@
     .budget-spent { font-family: var(--font-mono); font-size: 11px; color: var(--text-mid); }
     .budget-total { font-family: var(--font-mono); font-size: 11px; color: var(--text-light); }
     .mic-btn {
-      width: 100%; padding: 13px;
-      background: var(--surface-2);
-      border: 1.5px dashed var(--border);
+      width: 100%; padding: 13px 14px;
+      background: var(--primary-dim);
+      border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
       border-radius: var(--radius-md);
       font-family: var(--font-ui);
       font-size: 13px; font-weight: 600;
-      color: var(--text-light);
+      color: var(--primary);
       cursor: pointer; margin-bottom: 14px;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: all var(--t);
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      transition: background var(--t), border-color var(--t), transform var(--t);
     }
 
     .mic-btn:active { transform: scale(0.97); }
 
-    .mic-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--t); }
+    .mic-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--t); }
 
     .mic-btn.listening {
-      background: rgba(224,120,72,0.10);
+      background: color-mix(in srgb, var(--primary) 18%, transparent);
       border-color: var(--primary);
-      border-style: solid;
-      color: var(--primary);
       animation: micPulse 1.2s ease-in-out infinite;
     }
 
@@ -571,16 +577,16 @@
     .tc-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-light); margin-bottom: 6px; }
     .total-card.accent .tc-label { color: rgba(255,255,255,0.6); }
 
-    .tc-amt { font-family: var(--font-mono); font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+    .tc-amt { font-family: var(--font-display); font-size: 28px; font-weight: 600; letter-spacing: -0.4px; color: var(--text); line-height: 1; }
     .total-card.accent .tc-amt { color: white; }
 
-    .tc-count { font-size: 10px; color: var(--text-light); margin-top: 4px; }
-    .total-card.accent .tc-count { color: rgba(255,255,255,0.55); }
+    .tc-count { font-size: 10px; color: var(--text-light); margin-top: 6px; }
+    .total-card.accent .tc-count { color: rgba(255,255,255,0.6); }
 
     .sec-card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius-md); padding: 18px 16px;
-      margin-bottom: 10px; box-shadow: var(--card-edge), var(--shadow);
+      margin-bottom: var(--sec-gap); box-shadow: var(--card-edge), var(--shadow);
     }
 
     /* TABS */
@@ -615,7 +621,8 @@
       border-radius: 12px; padding: 4px;
       margin-bottom: 14px;
     }
-    .dash-tabs .tab-btn { padding: 9px 4px; font-size: 11px; }
+    .dash-tabs .tab-btn { padding: 9px 4px; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+    .tab-btn .tb-ic { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
     .sec-card-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-light); margin-bottom: 12px; }
 
@@ -648,7 +655,7 @@
     .lc-month-label { font-size: 10px; fill: var(--text-light); font-family: var(--font-ui); font-weight: 700; text-anchor: middle; }
     .lc-month-label.cur { fill: var(--primary); }
 
-    .lc-area { opacity: 0.12; }
+    .lc-area { opacity: 1; }
     .lc-line { fill: none; stroke: var(--primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .lc-dot { fill: var(--surface); stroke: var(--primary); stroke-width: 2; }
     .lc-dot.cur { fill: var(--primary); r: 5; }
@@ -732,18 +739,19 @@
 
     .exp-trash svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .exp-trash:active { color: var(--warn); background: var(--warn-bg); }
-    .filter-row { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 2px; -ms-overflow-style: none; scrollbar-width: none; }
-    .filter-row::-webkit-scrollbar { display: none; }
-
-    .filter-chip {
-      padding: 6px 13px; border-radius: 20px; border: 1.5px solid var(--border);
-      font-family: var(--font-ui); font-size: 11px; font-weight: 700;
-      cursor: pointer; background: var(--surface); color: var(--text-mid);
-      white-space: nowrap; transition: all var(--t); flex-shrink: 0;
-    }
-    .filter-chip.active { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
-
     .expense-list { display: flex; flex-direction: column; gap: 7px; }
+
+    /* sticky date dividers in the ledger */
+    .exp-date-header {
+      position: sticky; top: var(--header-h); z-index: 6;
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding: 13px 6px 7px; margin: 5px 0 0;
+      background: color-mix(in srgb, var(--bg) 86%, transparent);
+      -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    }
+    .exp-date-header:first-child { margin-top: 0; }
+    .exp-date-header .edh-day   { font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--text); }
+    .exp-date-header .edh-total { font-family: var(--font-mono); font-size: 11px; color: var(--text-mid); }
 
     .exp-item {
       background: var(--surface); border: 1px solid var(--border);
@@ -753,7 +761,7 @@
     }
     .exp-item:active { transform: scale(0.98); }
 
-    .exp-icon { width: 42px; height: 42px; border-radius: 12px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-mid); }
+    .exp-icon { width: 42px; height: 42px; border-radius: 12px; background: color-mix(in srgb, currentColor 14%, var(--surface-2)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-mid); }
     .exp-icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .exp-info { flex: 1; min-width: 0; }
     .exp-desc { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
@@ -814,6 +822,7 @@
   <div class="amount-card">
     <div class="field-label">¿Cuánto gastaste?</div>
     <div class="amount-row">
+      <span class="amount-prefix">$</span>
       <input class="amount-input" type="number" id="monto" placeholder="0" inputmode="decimal" step="any" min="0" autocomplete="off">
       <div class="cur-stack">
         <button class="cur-btn active" id="btn-mxn" onclick="setCurrency('MXN')">MXN</button>
@@ -864,15 +873,13 @@
   </div>
 
   <div class="budget-card" id="budget-card">
-    <div class="budget-header">
-      <div>
-        <div class="budget-title">Budget semanal · Juntos</div>
-        <div class="budget-dates" id="budget-dates">—</div>
-      </div>
-      <div class="budget-remaining">
-        <div class="budget-remaining-amount ok" id="budget-remaining-amt">—</div>
-        <div class="budget-remaining-label" id="budget-remaining-lbl">restantes</div>
-      </div>
+    <div class="budget-top">
+      <div class="budget-title">Budget semanal · Juntos</div>
+      <div class="budget-dates" id="budget-dates">—</div>
+    </div>
+    <div class="budget-hero">
+      <div class="budget-remaining-amount ok" id="budget-remaining-amt">—</div>
+      <div class="budget-remaining-label" id="budget-remaining-lbl">restantes esta semana</div>
     </div>
     <div class="budget-track">
       <div class="budget-fill ok" id="budget-fill" style="width:0%"></div>
@@ -928,10 +935,10 @@
 
 <!-- VIEW: HISTORIAL -->
 <main id="view-history" class="view">
-  <div class="filter-row">
-    <button class="filter-chip active" onclick="setFilter('all',this)">Todos</button>
-    <button class="filter-chip" onclick="setFilter('Fernando',this)">Fernando</button>
-    <button class="filter-chip" onclick="setFilter('Sofi',this)">Sofi</button>
+  <div class="dash-tabs" id="hist-filter">
+    <button class="tab-btn active" onclick="setFilter('all',this)"><svg class="tb-ic" viewBox="0 0 24 24"><use href="#ic-users"/></svg>Todos</button>
+    <button class="tab-btn" onclick="setFilter('Fernando',this)"><svg class="tb-ic" viewBox="0 0 24 24"><use href="#ic-user"/></svg>Fer</button>
+    <button class="tab-btn" onclick="setFilter('Sofi',this)"><svg class="tb-ic" viewBox="0 0 24 24"><use href="#ic-user"/></svg>Sofi</button>
   </div>
   <div class="expense-list" id="expense-list">
     <div class="loading-dots"><span></span><span></span><span></span></div>
@@ -1367,7 +1374,8 @@
     remEl.className   = `budget-remaining-amount ${status}`;
 
     document.getElementById('budget-remaining-lbl').textContent =
-      status === 'over' ? 'de sobrepaso' : 'restantes esta semana';
+      status === 'over' ? 'de sobrepaso esta semana' : 'restantes esta semana';
+    document.getElementById('budget-card').classList.toggle('is-over', status === 'over');
 
     const fill = document.getElementById('budget-fill');
     fill.style.width   = pct + '%';
@@ -1445,7 +1453,9 @@
     const cx = i => padL + i * step;
     const cy = v => padT + chartH - (v / maxVal) * chartH;
 
-    let out = '';
+    let out = '<defs><linearGradient id="lcAreaGrad" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0" stop-color="var(--primary)" stop-opacity="0.24"/>' +
+              '<stop offset="1" stop-color="var(--primary)" stop-opacity="0.01"/></linearGradient></defs>';
 
     // y-axis grid: 0, mid, max
     [0, maxVal * 0.5, maxVal].forEach(v => {
@@ -1465,7 +1475,7 @@
     const areaD = `M${cx(0)},${cy(0)} ` +
                   weeks.map((w, i) => `L${cx(i)},${cy(w.total)}`).join(' ') +
                   ` L${cx(weeks.length - 1)},${cy(0)} Z`;
-    out += `<path class="lc-area" d="${areaD}" fill="var(--primary)"/>`;
+    out += `<path class="lc-area" d="${areaD}" fill="url(#lcAreaGrad)"/>`;
     out += `<path class="lc-line" d="${weeks.map((w, i) => `${i === 0 ? 'M' : 'L'}${cx(i)},${cy(w.total)}`).join(' ')}"/>`;
 
     // dots + value labels + week (Monday) labels
@@ -1571,7 +1581,7 @@
   /* ── HISTORY ── */
   function setFilter(f, el) {
     filter = f;
-    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('#hist-filter .tab-btn').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
     renderHistory();
   }
@@ -1583,42 +1593,63 @@
     const el = document.getElementById('expense-list');
 
     if (!fd.length) {
-      el.innerHTML = `<div class="empty-state"><span class="ee">📭</span><div class="et">Sin gastos todavía</div><div class="es">Registra el primero ✏️</div></div>`;
+      el.innerHTML = `<div class="empty-state"><span class="ee">📭</span><div class="et">Nada por aquí todavía</div><div class="es">Registra el primero ✏️</div></div>`;
       return;
     }
 
-    el.innerHTML = fd.map((e, i) => {
-      const raw   = str10(e.Fecha);
-      const fecha = raw ? new Date(raw + 'T12:00:00').toLocaleDateString('es-MX', { day:'numeric', month:'short' }) : '';
-      const cat   = e.Categoria || 'Otros';
-      const desc  = e.Descripcion || e.Categoria || '—';
-      const ts    = esc(e.Timestamp || '');
-      const tipo  = e.Tipo ? `<svg class="exp-tipo-ic" viewBox="0 0 24 24"><use href="#ic-${e.Tipo === 'Juntos' ? 'users' : 'user'}"/></svg> ` : '';
+    // per-day subtotals (MXN-equivalent) for the date dividers
+    const dayTotal = {};
+    fd.forEach(e => { const d = str10(e.Fecha); dayTotal[d] = (dayTotal[d] || 0) + mxnAmount(e); });
 
-      return `<div class="exp-item" id="item-${i}">
+    const today = todayStr();
+    const yest  = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return dateStr(d); })();
+    const dayLabel = d => {
+      if (d === today) return 'Hoy';
+      if (d === yest)  return 'Ayer';
+      const dt = new Date(d + 'T12:00:00');
+      if (isNaN(dt)) return d || '—';
+      const s = dt.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '');
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    };
+
+    let html = '', curDate = null, i = 0;
+    fd.forEach(e => {
+      const d = str10(e.Fecha);
+      if (d !== curDate) {
+        curDate = d;
+        html += `<div class="exp-date-header"><span class="edh-day">${esc(dayLabel(d))}</span><span class="edh-total">$${fmt(dayTotal[d])}</span></div>`;
+      }
+      const idx  = i++;
+      const cat  = e.Categoria || 'Otros';
+      const desc = e.Descripcion || e.Categoria || '—';
+      const ts   = esc(e.Timestamp || '');
+      const tipo = e.Tipo ? `<svg class="exp-tipo-ic" viewBox="0 0 24 24"><use href="#ic-${e.Tipo === 'Juntos' ? 'users' : 'user'}"/></svg> ` : '';
+
+      html += `<div class="exp-item" id="item-${idx}">
         <div class="exp-item-main">
           <div class="exp-icon" style="color:${catColor(cat)}"><svg viewBox="0 0 24 24"><use href="#ic-${catIcon(cat)}"/></svg></div>
           <div class="exp-info">
             <div class="exp-desc">${esc(desc)}</div>
-            <div class="exp-meta">${tipo}${esc(e.Categoria||'')} · ${esc(e.Quien||'')} · ${fecha}</div>
+            <div class="exp-meta">${tipo}${esc(e.Categoria||'')} · ${esc(e.Quien||'')}</div>
           </div>
           <div class="exp-right">
             <div class="exp-monto">$${fmt(num(e.Monto))}</div>
             <div class="exp-cur">${e.Moneda||'MXN'}</div>
           </div>
-          <button class="exp-trash" onclick="askDelete(${i})" aria-label="Borrar">
+          <button class="exp-trash" onclick="askDelete(${idx})" aria-label="Borrar">
             <svg><use href="#ic-trash"/></svg>
           </button>
         </div>
-        <div class="exp-delete-bar" id="del-bar-${i}">
+        <div class="exp-delete-bar" id="del-bar-${idx}">
           <span class="exp-delete-label">¿Borrar este gasto?</span>
           <div class="exp-delete-actions">
-            <button class="exp-del-btn cancel" onclick="cancelDelete(${i})">No</button>
-            <button class="exp-del-btn confirm" onclick="confirmDelete(${i}, '${ts}')">Sí, borrar</button>
+            <button class="exp-del-btn cancel" onclick="cancelDelete(${idx})">No</button>
+            <button class="exp-del-btn confirm" onclick="confirmDelete(${idx}, '${ts}')">Sí, borrar</button>
           </div>
         </div>
       </div>`;
-    }).join('');
+    });
+    el.innerHTML = html;
   }
 
   function askDelete(i) {
