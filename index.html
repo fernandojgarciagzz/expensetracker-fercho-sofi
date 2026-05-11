@@ -120,9 +120,9 @@
       --surface-2:   #1F160E;
       --surface-3:   #2A1E14;
       --border:      #2E1F14;
-      --primary:     #E07848;
-      --primary-dim: rgba(224,120,72,0.14);
-      --primary-glow:rgba(224,120,72,0.28);
+      --primary:     #D97757;
+      --primary-dim: rgba(217,119,87,0.14);
+      --primary-glow:rgba(217,119,87,0.30);
       --text:        #EDE0D5;
       --text-mid:    #A08070;
       --text-light:  #5A3E30;
@@ -132,7 +132,7 @@
       --warn:        #E06060;
       --shadow:      0 2px 20px rgba(0,0,0,0.5);
       /* warm gradient blobs that the glass picks up */
-      --blob-1:      rgba(224,120,72,0.26);
+      --blob-1:      rgba(217,119,87,0.26);
       --blob-2:      rgba(217,154,43,0.16);
       --blob-3:      rgba(217,100,90,0.13);
       /* glass tokens */
@@ -153,9 +153,9 @@
       --surface-2:   #F2EBE4;
       --surface-3:   #E8DDD4;
       --border:      #E2D5C8;
-      --primary:     #C8603A;
-      --primary-dim: rgba(200,96,58,0.10);
-      --primary-glow:rgba(200,96,58,0.22);
+      --primary:     #BC5F3C;
+      --primary-dim: rgba(188,95,60,0.10);
+      --primary-glow:rgba(188,95,60,0.22);
       --text:        #1A0D08;
       --text-mid:    #6B4035;
       --text-light:  #A88878;
@@ -606,7 +606,7 @@
 
     /* DASHBOARD */
     .dash-header { margin-bottom: 14px; }
-    .dash-month { font-family: var(--font-display); font-size: 26px; font-weight: 600; letter-spacing: -0.2px; text-transform: capitalize; line-height: 1.05; }
+    .dash-month { font-family: var(--font-ui); font-size: 22px; font-weight: 700; letter-spacing: -0.6px; text-transform: capitalize; line-height: 1.05; }
     .dash-sub { font-size: 11px; color: var(--text-light); margin-top: 2px; }
 
     .totals-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
@@ -766,7 +766,7 @@
     .exp-item { position: relative; flex-direction: column; align-items: stretch; padding: 0; overflow: hidden; }
 
     .exp-item-main {
-      display: flex; align-items: flex-start; gap: 11px;
+      display: flex; align-items: center; gap: 11px;
       padding: 13px 14px;
     }
 
@@ -843,7 +843,7 @@
     /* STATES */
     .empty-state { text-align: center; padding: 48px 20px 24px; }
     .empty-state .ee { font-size: 40px; display: block; margin-bottom: 10px; }
-    .empty-state .et { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--text-mid); margin-bottom: 5px; }
+    .empty-state .et { font-family: var(--font-ui); font-size: 16px; font-weight: 700; color: var(--text-mid); margin-bottom: 5px; letter-spacing: -0.2px; }
     .empty-state .es { font-size: 12px; color: var(--text-light); }
 
     .loading-dots { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 32px; }
