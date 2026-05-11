@@ -131,11 +131,20 @@
       --warn-bg:     rgba(220,80,80,0.12);
       --warn:        #E06060;
       --shadow:      0 2px 20px rgba(0,0,0,0.5);
-      --bg-glow:     rgba(224,120,72,0.11);
-      --bg-glow-2:   rgba(200,96,140,0.05);
-      --card-edge:   inset 0 1px 0 rgba(255,255,255,0.045);
-      --grain-op:    0.045;
-      --theme-color: #0C0806;
+      /* warm gradient blobs that the glass picks up */
+      --blob-1:      rgba(224,120,72,0.26);
+      --blob-2:      rgba(217,154,43,0.16);
+      --blob-3:      rgba(217,100,90,0.13);
+      /* glass tokens */
+      --glass-bg:        color-mix(in srgb, var(--surface) 58%, transparent);
+      --glass-bg-lite:   color-mix(in srgb, var(--surface) 72%, transparent);
+      --glass-border:    1px solid rgba(255,228,200,0.10);
+      --glass-edge:      inset 0 1px 0 rgba(255,235,220,0.08);
+      --glass-shadow:    0 14px 44px rgba(0,0,0,0.32), 0 2px 8px rgba(0,0,0,0.18);
+      --glass-blur:      blur(22px) saturate(1.4);
+      --card-edge:       inset 0 1px 0 rgba(255,235,220,0.08);
+      --grain-op:        0.04;
+      --theme-color:     #0C0806;
     }
 
     [data-theme="light"] {
@@ -155,11 +164,18 @@
       --warn-bg:     rgba(200,60,60,0.10);
       --warn:        #C84040;
       --shadow:      0 2px 16px rgba(0,0,0,0.08);
-      --bg-glow:     rgba(224,150,90,0.16);
-      --bg-glow-2:   rgba(214,180,150,0.20);
-      --card-edge:   inset 0 1px 0 rgba(255,255,255,0.7);
-      --grain-op:    0.03;
-      --theme-color: #F8F3EE;
+      --blob-1:      rgba(224,150,90,0.32);
+      --blob-2:      rgba(232,200,140,0.26);
+      --blob-3:      rgba(232,170,150,0.22);
+      --glass-bg:        color-mix(in srgb, var(--surface) 60%, transparent);
+      --glass-bg-lite:   color-mix(in srgb, var(--surface) 78%, transparent);
+      --glass-border:    1px solid rgba(255,255,255,0.7);
+      --glass-edge:      inset 0 1px 0 rgba(255,255,255,0.85);
+      --glass-shadow:    0 10px 30px rgba(160,90,60,0.10), 0 2px 6px rgba(160,90,60,0.06);
+      --glass-blur:      blur(22px) saturate(1.3);
+      --card-edge:       inset 0 1px 0 rgba(255,255,255,0.75);
+      --grain-op:        0.03;
+      --theme-color:     #F8F3EE;
     }
 
     *, *::before, *::after {
@@ -167,19 +183,26 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    html { height: 100%; background: var(--bg); }
+    /* warm gradient blobs live on <html> so they fill the viewport (not just the
+       480px content column) and don't scroll away with content */
+    html {
+      height: 100%;
+      background:
+        radial-gradient(58% 38% at 14% 12%, var(--blob-1), transparent 64%),
+        radial-gradient(52% 34% at 92% 22%, var(--blob-2), transparent 68%),
+        radial-gradient(70% 44% at 50% 96%, var(--blob-3), transparent 72%),
+        var(--bg);
+      background-attachment: fixed;
+      transition: background-color var(--t);
+    }
 
     body {
       font-family: var(--font-ui);
       color: var(--text);
+      background: transparent;
       max-width: 480px; margin: 0 auto; min-height: 100%;
       -webkit-font-smoothing: antialiased;
-      background:
-        radial-gradient(130% 52% at 50% -8%, var(--bg-glow), transparent 58%),
-        radial-gradient(120% 40% at 100% 100%, var(--bg-glow-2), transparent 60%),
-        var(--bg);
-      background-attachment: fixed;
-      transition: background-color var(--t), color var(--t);
+      transition: color var(--t);
     }
 
     /* film-grain overlay — sits above everything, never blocks clicks */
@@ -224,19 +247,21 @@
 
     .icon-btn {
       width: 34px; height: 34px;
-      border-radius: 10px; border: 1px solid var(--border);
-      background: var(--surface-2); cursor: pointer;
+      border-radius: 12px; border: var(--glass-border);
+      background: var(--glass-bg-lite); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       color: var(--text-mid); transition: all var(--t);
+      box-shadow: var(--glass-edge);
     }
 
     .icon-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .icon-btn:active { transform: scale(0.9); }
 
     .who-sel {
-      display: flex; background: var(--surface-2);
+      display: flex; background: var(--glass-bg-lite);
       border-radius: 20px; padding: 3px;
-      border: 1px solid var(--border);
+      border: var(--glass-border);
+      box-shadow: var(--glass-edge);
     }
 
     .who-btn {
@@ -277,9 +302,12 @@
 
     /* FORM */
     .amount-card {
-      background: var(--surface); border-radius: var(--radius-lg);
-      padding: 22px 20px 18px; margin-bottom: 12px;
-      border: 1px solid var(--border); box-shadow: var(--card-edge), var(--shadow);
+      background: var(--glass-bg); border-radius: var(--radius-lg);
+      padding: 22px 20px 18px; margin-bottom: var(--sec-gap);
+      border: var(--glass-border);
+      box-shadow: var(--glass-edge), var(--glass-shadow);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
     }
 
     .field-label {
@@ -311,11 +339,13 @@
     .cur-stack { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
 
     .cur-btn {
-      padding: 6px 10px; border-radius: 8px;
-      border: 1.5px solid var(--border);
+      padding: 6px 10px; border-radius: 10px;
+      border: var(--glass-border);
       font-family: var(--font-mono);
       font-size: 10px; font-weight: 700; letter-spacing: 0.6px;
-      cursor: pointer; background: transparent; color: var(--text-light);
+      cursor: pointer;
+      background: var(--glass-bg-lite);
+      color: var(--text-light);
       transition: all var(--t);
     }
 
@@ -345,12 +375,13 @@
 
     .cat-btn {
       --cat-c: var(--primary);
-      border-radius: var(--radius-sm); border: 1.5px solid var(--border);
-      background: var(--surface); cursor: pointer;
+      border-radius: 14px; border: var(--glass-border);
+      background: var(--glass-bg-lite); cursor: pointer;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       gap: 6px; padding: 12px 4px 10px; min-height: 74px;
-      transition: border-color var(--t), background var(--t), transform var(--spring);
+      box-shadow: var(--glass-edge);
+      transition: border-color var(--t), background var(--t), transform var(--spring), box-shadow var(--t);
     }
 
     .cat-btn svg { width: 20px; height: 20px; stroke: var(--text-light); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--t); }
@@ -358,9 +389,9 @@
     .cat-btn:active { transform: scale(0.92); }
 
     .cat-btn.selected {
-      border-color: var(--cat-c);
-      background: color-mix(in srgb, var(--cat-c) 15%, transparent);
-      box-shadow: 0 4px 16px color-mix(in srgb, var(--cat-c) 26%, transparent);
+      border-color: color-mix(in srgb, var(--cat-c) 70%, transparent);
+      background: color-mix(in srgb, var(--cat-c) 18%, var(--glass-bg-lite));
+      box-shadow: var(--glass-edge), 0 6px 22px color-mix(in srgb, var(--cat-c) 30%, transparent);
     }
     .cat-btn.selected svg { stroke: var(--cat-c); }
     .cat-btn.selected .c-label { color: var(--cat-c); }
@@ -374,11 +405,12 @@
     .tipo-btn {
       padding: 13px 8px;
       border-radius: var(--radius-md);
-      border: 1.5px solid var(--border);
-      background: var(--surface);
+      border: var(--glass-border);
+      background: var(--glass-bg-lite);
       cursor: pointer;
       display: flex; flex-direction: column;
       align-items: center; gap: 5px;
+      box-shadow: var(--glass-edge);
       transition: border-color var(--t), background var(--t), box-shadow var(--t), transform var(--spring);
     }
 
@@ -388,22 +420,32 @@
     .tipo-btn:active { transform: scale(0.96); }
 
     .tipo-btn.selected {
-      border-color: var(--primary); background: var(--primary-dim);
-      box-shadow: 0 4px 18px var(--primary-glow);
+      border-color: color-mix(in srgb, var(--primary) 70%, transparent);
+      background: color-mix(in srgb, var(--primary) 16%, var(--glass-bg-lite));
+      box-shadow: var(--glass-edge), 0 6px 22px var(--primary-glow);
     }
     .tipo-btn.selected svg { stroke: var(--primary); }
     .tipo-btn.selected .t-label { color: var(--primary); }
 
-    /* BUDGET CARD */
+    /* BUDGET CARD — the "wallet" hero. Sheen + glass bg as stacked background
+       layers (paints before children, so text reads on top with no z-index). */
     .budget-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 18px 18px 16px;
-      margin-bottom: var(--sec-gap); box-shadow: var(--card-edge), var(--shadow);
+      background:
+        linear-gradient(135deg, rgba(255,235,220,0.11) 0%, transparent 36%, transparent 64%, rgba(255,235,220,0.04) 100%),
+        var(--glass-bg);
+      border: var(--glass-border);
+      border-radius: 26px; padding: 20px 20px 18px;
+      margin-bottom: var(--sec-gap);
+      box-shadow: var(--glass-edge), var(--glass-shadow);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
       transition: border-color var(--t), background var(--t);
     }
     .budget-card.is-over {
-      border-color: color-mix(in srgb, var(--warn) 35%, var(--border));
-      background: linear-gradient(180deg, color-mix(in srgb, var(--warn) 8%, var(--surface)), var(--surface));
+      border-color: color-mix(in srgb, var(--warn) 45%, transparent);
+      background:
+        linear-gradient(135deg, rgba(255,235,220,0.08) 0%, transparent 40%, transparent 60%, rgba(255,235,220,0.03) 100%),
+        linear-gradient(180deg, color-mix(in srgb, var(--warn) 14%, var(--glass-bg)), var(--glass-bg));
     }
 
     .budget-top {
@@ -488,23 +530,27 @@
     .voice-preview.show { display: block; }
     .voice-preview strong { color: var(--primary); }
     .desc-input {
-      width: 100%; background: var(--surface);
-      border: 1.5px solid var(--border); border-radius: var(--radius-md);
+      width: 100%; background: var(--glass-bg-lite);
+      border: var(--glass-border); border-radius: var(--radius-md);
       padding: 14px 16px; font-family: var(--font-ui);
       font-size: 15px; color: var(--text); outline: none; resize: none;
-      margin-bottom: 14px; transition: border-color var(--t), background var(--t);
+      margin-bottom: 14px;
+      box-shadow: var(--glass-edge);
+      transition: border-color var(--t), background var(--t);
       -webkit-appearance: none;
     }
-    .desc-input:focus { border-color: var(--primary); }
+    .desc-input:focus { border-color: color-mix(in srgb, var(--primary) 70%, transparent); }
     .desc-input::placeholder { color: var(--text-light); }
 
     .submit-btn {
-      width: 100%; padding: 17px; background: var(--primary);
-      color: white; border: none; border-radius: var(--radius-md);
+      width: 100%; padding: 17px;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 90%, white) 0%, var(--primary) 55%, color-mix(in srgb, var(--primary) 88%, black) 100%);
+      color: white; border: 1px solid color-mix(in srgb, white 22%, transparent);
+      border-radius: var(--radius-md);
       font-family: var(--font-ui); font-size: 15px; font-weight: 700;
       cursor: pointer; letter-spacing: 0.3px;
-      box-shadow: 0 4px 20px var(--primary-glow);
-      transition: all var(--t);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 28px var(--primary-glow), 0 2px 6px rgba(0,0,0,0.18);
+      transition: transform var(--t), box-shadow var(--t);
     }
     .submit-btn:active { transform: scale(0.97); box-shadow: 0 2px 8px var(--primary-glow); }
     .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
@@ -566,13 +612,21 @@
     .totals-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 
     .total-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: 18px 16px; box-shadow: var(--card-edge), var(--shadow);
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 18px 16px;
+      box-shadow: var(--glass-edge), var(--glass-shadow);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
     }
 
     .total-card.accent {
-      background: var(--primary); border-color: transparent;
-      box-shadow: 0 4px 20px var(--primary-glow);
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--primary) 92%, white) 0%, var(--primary) 60%, color-mix(in srgb, var(--primary) 85%, black) 100%);
+      border: 1px solid color-mix(in srgb, white 18%, transparent);
+      box-shadow: var(--glass-edge), 0 10px 28px var(--primary-glow), 0 2px 8px rgba(0,0,0,0.18);
+      -webkit-backdrop-filter: none; backdrop-filter: none;
     }
 
     .tc-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-light); margin-bottom: 6px; }
@@ -585,17 +639,23 @@
     .total-card.accent .tc-count { color: rgba(255,255,255,0.6); }
 
     .sec-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: 18px 16px;
-      margin-bottom: var(--sec-gap); box-shadow: var(--card-edge), var(--shadow);
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      border-radius: var(--radius-lg); padding: 18px 16px;
+      margin-bottom: var(--sec-gap);
+      box-shadow: var(--glass-edge), var(--glass-shadow);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
     }
 
     /* TABS */
     .tabs {
       display: flex; gap: 4px;
-      background: var(--surface-2);
-      border-radius: 10px; padding: 3px;
+      background: var(--glass-bg-lite);
+      border: var(--glass-border);
+      border-radius: 12px; padding: 4px;
       margin-bottom: 14px;
+      box-shadow: var(--glass-edge);
     }
 
     .tab-btn {
@@ -609,18 +669,19 @@
     }
 
     .tab-btn.active {
-      background: var(--surface);
+      background: color-mix(in srgb, var(--primary) 14%, var(--surface));
       color: var(--primary);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,235,220,0.08);
     }
 
     /* DASH FILTER — Todos / Juntos / Personal, drives the whole Resumen tab */
     .dash-tabs {
       display: flex; gap: 4px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 12px; padding: 4px;
+      background: var(--glass-bg-lite);
+      border: var(--glass-border);
+      border-radius: 14px; padding: 4px;
       margin-bottom: 14px;
+      box-shadow: var(--glass-edge);
     }
     .dash-tabs .tab-btn { padding: 9px 4px; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
     .tab-btn .tb-ic { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
@@ -687,8 +748,12 @@
     .chart-tip {
       position: absolute; left: 0; top: 0; z-index: 12; display: none;
       min-width: 134px; max-width: 210px;
-      background: var(--surface-3); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 9px 11px; box-shadow: var(--card-edge), var(--shadow);
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      border-radius: var(--radius-sm); padding: 9px 11px;
+      box-shadow: var(--glass-edge), var(--glass-shadow);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
     }
     .chart-tip.show { display: block; }
     .chart-tip-head { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; font-weight: 700; margin-bottom: 5px; }
@@ -755,10 +820,13 @@
     .exp-date-header .edh-total { font-family: var(--font-mono); font-size: 11px; color: var(--text-mid); }
 
     .exp-item {
-      background: var(--surface); border: 1px solid var(--border);
+      /* glass-lite: translucent + warm hairline edge, no backdrop-blur (so long lists stay smooth) */
+      background: var(--glass-bg-lite);
+      border: var(--glass-border);
       border-radius: var(--radius-md); padding: 13px 14px;
       display: flex; align-items: center; gap: 11px;
-      transition: transform var(--t);
+      box-shadow: var(--card-edge);
+      transition: transform var(--t), background var(--t);
     }
     .exp-item:active { transform: scale(0.98); }
 
@@ -803,7 +871,7 @@
     </div>
     <div>
       <div class="h-title">De <span class="ht-accent">Dos</span></div>
-      <div class="h-sub">Fer & Sofi</div>
+      <div class="h-sub">Fercho & Sofi</div>
     </div>
   </div>
   <div class="header-right">
@@ -812,7 +880,7 @@
       <svg class="icon-moon" width="15" height="15" stroke="currentColor" stroke-width="2" style="display:none"><use href="#ic-moon"/></svg>
     </button>
     <div class="who-sel">
-      <button class="who-btn" data-who="Fernando" onclick="setWho('Fernando',this)">Fer</button>
+      <button class="who-btn" data-who="Fernando" onclick="setWho('Fernando',this)">Fercho</button>
       <button class="who-btn" data-who="Sofi" onclick="setWho('Sofi',this)">Sofi</button>
     </div>
   </div>
@@ -938,7 +1006,7 @@
 <main id="view-history" class="view">
   <div class="dash-tabs" id="hist-filter">
     <button class="tab-btn active" onclick="setFilter('all',this)"><svg class="tb-ic" viewBox="0 0 24 24"><use href="#ic-users"/></svg>Todos</button>
-    <button class="tab-btn" onclick="setFilter('Fernando',this)"><svg class="tb-ic" viewBox="0 0 24 24"><use href="#ic-user"/></svg>Fer</button>
+    <button class="tab-btn" onclick="setFilter('Fernando',this)"><svg class="tb-ic" viewBox="0 0 24 24"><use href="#ic-user"/></svg>Fercho</button>
     <button class="tab-btn" onclick="setFilter('Sofi',this)"><svg class="tb-ic" viewBox="0 0 24 24"><use href="#ic-user"/></svg>Sofi</button>
   </div>
   <div class="expense-list" id="expense-list">
@@ -991,6 +1059,11 @@
   CATS.forEach((c, i) => { CAT_COLOR_BY_LABEL[c.label] = CAT_COLORS[i]; CAT_ICON_BY_LABEL[c.label] = c.iconId; });
   const catColor = label => CAT_COLOR_BY_LABEL[label] || CAT_COLORS[CAT_COLORS.length - 1];   // unknown → Otros gray
   const catIcon  = label => CAT_ICON_BY_LABEL[label]  || 'dots';                                // unknown → Otros icon
+
+  // display nickname — the "Quien" column still stores "Fernando" (so old rows
+  // and the filter keep matching); we just show "Fercho" in the UI.
+  const NICK = { Fernando: 'Fercho' };
+  const dispName = q => NICK[q] || q || '';
 
   let selCat = null, selCur = 'MXN', selTipo = null;
   let dashTipo = 'Todos';   // Todos | Juntos | Personal — drives the whole Resumen tab
@@ -1141,7 +1214,7 @@
     document.getElementById('view-' + v).classList.add('active');
     document.getElementById('nav-' + v).classList.add('active');
     moveNavIndicator();
-    // the Fer/Sofi switch only matters when registering — hide it elsewhere
+    // the Fercho/Sofi switch only matters when registering — hide it elsewhere
     document.querySelector('.who-sel').style.display = (v === 'form') ? '' : 'none';
     if (v === 'dashboard' || v === 'history') loadData();
   }
@@ -1631,7 +1704,7 @@
           <div class="exp-icon" style="color:${catColor(cat)}"><svg viewBox="0 0 24 24"><use href="#ic-${catIcon(cat)}"/></svg></div>
           <div class="exp-info">
             <div class="exp-desc">${esc(desc)}</div>
-            <div class="exp-meta">${tipo}${esc(e.Categoria||'')} · ${esc(e.Quien||'')}</div>
+            <div class="exp-meta">${tipo}${esc(e.Categoria||'')} · ${esc(dispName(e.Quien))}</div>
           </div>
           <div class="exp-right">
             <div class="exp-monto">$${fmt(num(e.Monto))}</div>

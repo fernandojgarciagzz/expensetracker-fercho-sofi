@@ -1,7 +1,8 @@
-# De Dos — gastos de Fer & Sofi
+# De Dos — gastos de Fercho & Sofi
 
 ## Qué es
-"De Dos" — app de gastos compartidos para Fernando y Sofi. Mobile-first, dark mode por default.
+"De Dos" — app de gastos compartidos para Fercho y Sofi. Mobile-first, dark mode por default.
+(Ojo: la columna `Quien` del Sheet guarda "Fernando", no "Fercho" — la UI muestra el apodo vía `NICK`/`dispName`. Si algún día se cambia el valor guardado, hay que actualizar `data-who`, `setFilter('Fernando',...)` y migrar las filas viejas.)
 Live en: https://fernandojgarciagzz.github.io/expensetracker-fercho-sofi
 
 ## Stack
