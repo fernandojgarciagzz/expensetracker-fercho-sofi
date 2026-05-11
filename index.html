@@ -131,13 +131,13 @@
       --warn-bg:     rgba(220,80,80,0.12);
       --warn:        #E06060;
       --shadow:      0 2px 20px rgba(0,0,0,0.5);
-      /* warm gradient blobs that the glass picks up */
-      --blob-1:      rgba(217,119,87,0.26);
-      --blob-2:      rgba(217,154,43,0.16);
-      --blob-3:      rgba(217,100,90,0.13);
-      /* glass tokens */
-      --glass-bg:        color-mix(in srgb, var(--surface) 58%, transparent);
-      --glass-bg-lite:   color-mix(in srgb, var(--surface) 72%, transparent);
+      /* warm gradient blobs — more present so the glass actually has color to refract */
+      --blob-1:      rgba(217,119,87,0.42);
+      --blob-2:      rgba(217,154,43,0.26);
+      --blob-3:      rgba(217,100,90,0.22);
+      /* glass tokens — more translucent so the warm bg bleeds through */
+      --glass-bg:        color-mix(in srgb, var(--surface) 50%, transparent);
+      --glass-bg-lite:   color-mix(in srgb, var(--surface) 62%, transparent);
       --glass-border:    1px solid rgba(255,228,200,0.10);
       --glass-edge:      inset 0 1px 0 rgba(255,235,220,0.08);
       --glass-shadow:    0 14px 44px rgba(0,0,0,0.32), 0 2px 8px rgba(0,0,0,0.18);
@@ -164,11 +164,11 @@
       --warn-bg:     rgba(200,60,60,0.10);
       --warn:        #C84040;
       --shadow:      0 2px 16px rgba(0,0,0,0.08);
-      --blob-1:      rgba(224,150,90,0.32);
-      --blob-2:      rgba(232,200,140,0.26);
-      --blob-3:      rgba(232,170,150,0.22);
-      --glass-bg:        color-mix(in srgb, var(--surface) 60%, transparent);
-      --glass-bg-lite:   color-mix(in srgb, var(--surface) 78%, transparent);
+      --blob-1:      rgba(224,150,90,0.48);
+      --blob-2:      rgba(232,200,140,0.40);
+      --blob-3:      rgba(232,170,150,0.34);
+      --glass-bg:        color-mix(in srgb, var(--surface) 52%, transparent);
+      --glass-bg-lite:   color-mix(in srgb, var(--surface) 64%, transparent);
       --glass-border:    1px solid rgba(255,255,255,0.7);
       --glass-edge:      inset 0 1px 0 rgba(255,255,255,0.85);
       --glass-shadow:    0 10px 30px rgba(160,90,60,0.10), 0 2px 6px rgba(160,90,60,0.06);
@@ -807,25 +807,33 @@
     .exp-trash:active { color: var(--warn); background: var(--warn-bg); }
     .expense-list { display: flex; flex-direction: column; gap: 7px; }
 
-    /* sticky date dividers in the ledger */
+    /* date dividers — clean label, not another card. sticky still, with a
+       faint frosted bg so items scrolling under stay readable. */
     .exp-date-header {
       position: sticky; top: var(--header-h); z-index: 6;
       display: flex; align-items: baseline; justify-content: space-between;
-      padding: 13px 6px 7px; margin: 5px 0 0;
-      background: color-mix(in srgb, var(--bg) 86%, transparent);
-      -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+      padding: 10px 4px 6px; margin: 8px 0 0;
+      background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 78%, transparent) 0%, color-mix(in srgb, var(--bg) 60%, transparent) 100%);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     }
     .exp-date-header:first-child { margin-top: 0; }
-    .exp-date-header .edh-day   { font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--text); }
+    .exp-date-header .edh-day   {
+      font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+      color: var(--text-mid); text-transform: uppercase; letter-spacing: 1.2px;
+    }
     .exp-date-header .edh-total { font-family: var(--font-mono); font-size: 11px; color: var(--text-mid); }
 
     .exp-item {
-      /* glass-lite: translucent + warm hairline edge, no backdrop-blur (so long lists stay smooth) */
+      /* light glass: translucent + warm hairline + a modest blur so it actually
+         frosts what's behind. blur is kept smaller than the hero cards to
+         protect scroll perf on long lists. */
       background: var(--glass-bg-lite);
       border: var(--glass-border);
       border-radius: var(--radius-md); padding: 13px 14px;
       display: flex; align-items: center; gap: 11px;
       box-shadow: var(--card-edge);
+      -webkit-backdrop-filter: blur(10px) saturate(1.3);
+      backdrop-filter: blur(10px) saturate(1.3);
       transition: transform var(--t), background var(--t);
     }
     .exp-item:active { transform: scale(0.98); }
@@ -1219,17 +1227,17 @@
     if (v === 'dashboard' || v === 'history') loadData();
   }
 
-  // slide the pill behind the active nav button
+  // slide the pill behind the active nav button. offsetLeft/offsetWidth is
+  // relative to the nav's padding box (the indicator's containing block), so
+  // no padding correction needed. rAF ensures layout has settled.
   function moveNavIndicator() {
-    const nav = document.querySelector('.bottom-nav');
-    const btn = document.querySelector('.nav-btn.active');
-    const ind = document.getElementById('nav-indicator');
-    if (!nav || !btn || !ind) return;
-    const pad  = parseFloat(getComputedStyle(nav).paddingLeft) || 0;
-    const navL = nav.getBoundingClientRect().left + pad;
-    const b    = btn.getBoundingClientRect();
-    ind.style.width = b.width + 'px';
-    ind.style.transform = `translateX(${b.left - navL}px)`;
+    requestAnimationFrame(() => {
+      const btn = document.querySelector('.nav-btn.active');
+      const ind = document.getElementById('nav-indicator');
+      if (!btn || !ind) return;
+      ind.style.width = btn.offsetWidth + 'px';
+      ind.style.transform = `translateX(${btn.offsetLeft}px)`;
+    });
   }
 
   // Local date as YYYY-MM-DD — never use toISOString() here, it's UTC and
