@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Gastos · Fer & Sofi</title>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#0C0806">
   <!-- SVG icon sprite — no CDN, no runtime dependency, always renders -->
   <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
     <symbol id="ic-user" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -101,10 +103,15 @@
       --radius-sm: 12px;
       --radius-md: 18px;
       --radius-lg: 24px;
-      --nav-h: 78px;
+      --nav-h: 88px;                /* clearance for the floating pill nav */
+      --header-h: 58px;
+      --sec-gap: 14px;
       --safe-b: env(safe-area-inset-bottom, 10px);
       --t: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
       --spring: 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      --font-ui:      'Sora', system-ui, sans-serif;
+      --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+      --font-mono:    'JetBrains Mono', ui-monospace, monospace;
     }
 
     [data-theme="dark"] {
@@ -124,6 +131,11 @@
       --warn-bg:     rgba(220,80,80,0.12);
       --warn:        #E06060;
       --shadow:      0 2px 20px rgba(0,0,0,0.5);
+      --bg-glow:     rgba(224,120,72,0.11);
+      --bg-glow-2:   rgba(200,96,140,0.05);
+      --card-edge:   inset 0 1px 0 rgba(255,255,255,0.045);
+      --grain-op:    0.045;
+      --theme-color: #0C0806;
     }
 
     [data-theme="light"] {
@@ -143,6 +155,11 @@
       --warn-bg:     rgba(200,60,60,0.10);
       --warn:        #C84040;
       --shadow:      0 2px 16px rgba(0,0,0,0.08);
+      --bg-glow:     rgba(224,150,90,0.16);
+      --bg-glow-2:   rgba(214,180,150,0.20);
+      --card-edge:   inset 0 1px 0 rgba(255,255,255,0.7);
+      --grain-op:    0.03;
+      --theme-color: #F8F3EE;
     }
 
     *, *::before, *::after {
@@ -150,19 +167,37 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    html { height: 100%; }
+    html { height: 100%; background: var(--bg); }
 
     body {
-      font-family: 'Sora', sans-serif;
-      background: var(--bg); color: var(--text);
+      font-family: var(--font-ui);
+      color: var(--text);
       max-width: 480px; margin: 0 auto; min-height: 100%;
       -webkit-font-smoothing: antialiased;
-      transition: background var(--t), color var(--t);
+      background:
+        radial-gradient(130% 52% at 50% -8%, var(--bg-glow), transparent 58%),
+        radial-gradient(120% 40% at 100% 100%, var(--bg-glow-2), transparent 60%),
+        var(--bg);
+      background-attachment: fixed;
+      transition: background-color var(--t), color var(--t);
+    }
+
+    /* film-grain overlay — sits above everything, never blocks clicks */
+    body::after {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+      opacity: var(--grain-op); mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
     }
 
     /* HEADER */
     .header {
-      background: var(--surface);
+      background: color-mix(in srgb, var(--surface) 80%, transparent);
+      -webkit-backdrop-filter: blur(14px) saturate(1.4);
+      backdrop-filter: blur(14px) saturate(1.4);
       border-bottom: 1px solid var(--border);
       padding: 12px 18px;
       display: flex; align-items: center; justify-content: space-between;
@@ -181,8 +216,8 @@
 
     .header-mark svg { width: 16px; height: 16px; stroke: white; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 
-    .h-title { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
-    .h-sub   { font-size: 10px; color: var(--text-light); margin-top: 1px; }
+    .h-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; letter-spacing: 0; line-height: 1.1; }
+    .h-sub   { font-size: 10px; color: var(--text-light); margin-top: 2px; }
 
     .header-right { display: flex; align-items: center; gap: 6px; }
 
@@ -205,7 +240,7 @@
 
     .who-btn {
       padding: 5px 12px; border-radius: 16px; border: none;
-      font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700;
+      font-family: var(--font-ui); font-size: 11px; font-weight: 700;
       cursor: pointer; background: transparent; color: var(--text-light);
       transition: all var(--spring); letter-spacing: 0.2px;
     }
@@ -219,12 +254,23 @@
     .view {
       display: none;
       padding: 18px 16px calc(var(--nav-h) + var(--safe-b) + 12px);
-      animation: slideUp 0.2s ease;
     }
     .view.active { display: block; }
 
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(5px); }
+    /* staggered entrance for each view's direct children */
+    .view.active > * { animation: cardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+    .view.active > *:nth-child(1) { animation-delay: 0.02s; }
+    .view.active > *:nth-child(2) { animation-delay: 0.06s; }
+    .view.active > *:nth-child(3) { animation-delay: 0.10s; }
+    .view.active > *:nth-child(4) { animation-delay: 0.14s; }
+    .view.active > *:nth-child(5) { animation-delay: 0.18s; }
+    .view.active > *:nth-child(6) { animation-delay: 0.22s; }
+    .view.active > *:nth-child(7) { animation-delay: 0.26s; }
+    .view.active > *:nth-child(8) { animation-delay: 0.30s; }
+    .view.active > *:nth-child(n+9) { animation-delay: 0.34s; }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(14px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
@@ -232,7 +278,7 @@
     .amount-card {
       background: var(--surface); border-radius: var(--radius-lg);
       padding: 22px 20px 18px; margin-bottom: 12px;
-      border: 1px solid var(--border); box-shadow: var(--shadow);
+      border: 1px solid var(--border); box-shadow: var(--card-edge), var(--shadow);
     }
 
     .field-label {
@@ -245,7 +291,7 @@
 
     .amount-input {
       flex: 1;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 42px; font-weight: 700; color: var(--text);
       border: none; background: transparent; outline: none;
       min-width: 0; line-height: 1;
@@ -260,7 +306,7 @@
     .cur-btn {
       padding: 6px 10px; border-radius: 8px;
       border: 1.5px solid var(--border);
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 10px; font-weight: 700; letter-spacing: 0.6px;
       cursor: pointer; background: transparent; color: var(--text-light);
       transition: all var(--t);
@@ -274,7 +320,7 @@
     .date-row svg { width: 13px; height: 13px; stroke: var(--text-light); fill: none; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; }
 
     .date-input {
-      font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 500;
+      font-family: var(--font-ui); font-size: 13px; font-weight: 500;
       color: var(--text-mid); border: none; background: transparent;
       outline: none; cursor: pointer;
     }
@@ -291,21 +337,26 @@
     }
 
     .cat-btn {
+      --cat-c: var(--primary);
       border-radius: var(--radius-sm); border: 1.5px solid var(--border);
       background: var(--surface); cursor: pointer;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       gap: 6px; padding: 12px 4px 10px; min-height: 74px;
-      transition: all var(--t);
+      transition: border-color var(--t), background var(--t), transform var(--spring);
     }
 
     .cat-btn svg { width: 20px; height: 20px; stroke: var(--text-light); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--t); }
-    .cat-btn .c-label { font-size: 9px; font-weight: 600; color: var(--text-light); text-align: center; line-height: 1.2; }
+    .cat-btn .c-label { font-size: 9px; font-weight: 600; color: var(--text-light); text-align: center; line-height: 1.2; transition: color var(--t); }
     .cat-btn:active { transform: scale(0.92); }
 
-    .cat-btn.selected { border-color: var(--primary); background: var(--primary-dim); }
-    .cat-btn.selected svg { stroke: var(--primary); }
-    .cat-btn.selected .c-label { color: var(--primary); }
+    .cat-btn.selected {
+      border-color: var(--cat-c);
+      background: color-mix(in srgb, var(--cat-c) 15%, transparent);
+      box-shadow: 0 4px 16px color-mix(in srgb, var(--cat-c) 26%, transparent);
+    }
+    .cat-btn.selected svg { stroke: var(--cat-c); }
+    .cat-btn.selected .c-label { color: var(--cat-c); }
 
     /* TIPO SELECTOR */
     .tipo-row {
@@ -337,7 +388,7 @@
     .budget-card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius-md); padding: 18px 16px;
-      margin-bottom: 12px; box-shadow: var(--shadow);
+      margin-bottom: 12px; box-shadow: var(--card-edge), var(--shadow);
     }
 
     .budget-header {
@@ -354,7 +405,7 @@
     }
 
     .budget-remaining-amount {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 22px; font-weight: 700; letter-spacing: -0.5px;
     }
 
@@ -383,14 +434,14 @@
       align-items: center;
     }
 
-    .budget-spent { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-mid); }
-    .budget-total { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-light); }
+    .budget-spent { font-family: var(--font-mono); font-size: 11px; color: var(--text-mid); }
+    .budget-total { font-family: var(--font-mono); font-size: 11px; color: var(--text-light); }
     .mic-btn {
       width: 100%; padding: 13px;
       background: var(--surface-2);
       border: 1.5px dashed var(--border);
       border-radius: var(--radius-md);
-      font-family: 'Sora', sans-serif;
+      font-family: var(--font-ui);
       font-size: 13px; font-weight: 600;
       color: var(--text-light);
       cursor: pointer; margin-bottom: 14px;
@@ -432,7 +483,7 @@
     .desc-input {
       width: 100%; background: var(--surface);
       border: 1.5px solid var(--border); border-radius: var(--radius-md);
-      padding: 14px 16px; font-family: 'Sora', sans-serif;
+      padding: 14px 16px; font-family: var(--font-ui);
       font-size: 15px; color: var(--text); outline: none; resize: none;
       margin-bottom: 14px; transition: border-color var(--t), background var(--t);
       -webkit-appearance: none;
@@ -443,7 +494,7 @@
     .submit-btn {
       width: 100%; padding: 17px; background: var(--primary);
       color: white; border: none; border-radius: var(--radius-md);
-      font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700;
+      font-family: var(--font-ui); font-size: 15px; font-weight: 700;
       cursor: pointer; letter-spacing: 0.3px;
       box-shadow: 0 4px 20px var(--primary-glow);
       transition: all var(--t);
@@ -466,41 +517,50 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* NAV */
+    /* FLOATING PILL NAV */
     .bottom-nav {
-      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-      width: 100%; max-width: 480px;
-      background: var(--surface); border-top: 1px solid var(--border);
-      display: flex; padding-bottom: var(--safe-b); z-index: 30;
+      position: fixed; left: 50%; bottom: calc(var(--safe-b) + 14px);
+      transform: translateX(-50%);
+      display: flex; gap: 2px; padding: 6px; z-index: 30;
+      border-radius: 22px; border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 84%, transparent);
+      -webkit-backdrop-filter: blur(16px) saturate(1.5);
+      backdrop-filter: blur(16px) saturate(1.5);
+      box-shadow: var(--card-edge), 0 12px 36px rgba(0,0,0,0.28);
       transition: background var(--t), border-color var(--t);
     }
 
-    .nav-btn {
-      flex: 1; padding: 13px 8px 11px; border: none; background: transparent;
-      cursor: pointer; display: flex; flex-direction: column;
-      align-items: center; gap: 5px; position: relative;
+    .nav-indicator {
+      position: absolute; left: 0; top: 6px; bottom: 6px; width: 0;
+      border-radius: 16px; background: var(--primary-dim);
+      z-index: 0; pointer-events: none;
+      transition: transform var(--spring), width var(--spring);
     }
 
-    .nav-btn svg { width: 23px; height: 23px; stroke: var(--text-light); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--t); }
-    .nav-label { font-size: 10px; font-weight: 700; color: var(--text-light); letter-spacing: 0.4px; text-transform: uppercase; transition: color var(--t); }
+    .nav-btn {
+      position: relative; z-index: 1;
+      padding: 8px 16px; border: none; background: transparent;
+      cursor: pointer; display: flex; flex-direction: column;
+      align-items: center; gap: 3px; border-radius: 16px;
+      transition: transform var(--t);
+    }
+    .nav-btn svg { width: 22px; height: 22px; stroke: var(--text-light); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--t); }
+    .nav-label { font-size: 9.5px; font-weight: 700; color: var(--text-light); letter-spacing: 0.5px; text-transform: uppercase; transition: color var(--t); }
 
     .nav-btn.active svg { stroke: var(--primary); }
     .nav-btn.active .nav-label { color: var(--primary); }
-    .nav-btn:active { transform: scale(0.94); }
-    .nav-btn.active::after {
-      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-      width: 30px; height: 2.5px; background: var(--primary); border-radius: 0 0 3px 3px;
-    }
+    .nav-btn:active { transform: scale(0.92); }
 
     /* DASHBOARD */
     .dash-header { margin-bottom: 14px; }
-    .dash-month { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; text-transform: capitalize; }
+    .dash-month { font-family: var(--font-display); font-size: 26px; font-weight: 600; letter-spacing: -0.2px; text-transform: capitalize; line-height: 1.05; }
     .dash-sub { font-size: 11px; color: var(--text-light); margin-top: 2px; }
 
     .totals-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 
     .total-card {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: 18px 16px; box-shadow: var(--shadow);
+      border-radius: var(--radius-md); padding: 18px 16px; box-shadow: var(--card-edge), var(--shadow);
     }
 
     .total-card.accent {
@@ -511,7 +571,7 @@
     .tc-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-light); margin-bottom: 6px; }
     .total-card.accent .tc-label { color: rgba(255,255,255,0.6); }
 
-    .tc-amt { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+    .tc-amt { font-family: var(--font-mono); font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
     .total-card.accent .tc-amt { color: white; }
 
     .tc-count { font-size: 10px; color: var(--text-light); margin-top: 4px; }
@@ -520,7 +580,7 @@
     .sec-card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius-md); padding: 18px 16px;
-      margin-bottom: 10px; box-shadow: var(--shadow);
+      margin-bottom: 10px; box-shadow: var(--card-edge), var(--shadow);
     }
 
     /* TABS */
@@ -534,7 +594,7 @@
     .tab-btn {
       flex: 1; padding: 6px 4px;
       border-radius: 8px; border: none;
-      font-family: 'Sora', sans-serif;
+      font-family: var(--font-ui);
       font-size: 10px; font-weight: 700;
       cursor: pointer; background: transparent;
       color: var(--text-light);
@@ -574,7 +634,7 @@
     .cb-info { flex: 1; min-width: 0; }
     .cb-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
     .cb-name { font-size: 12px; font-weight: 500; }
-    .cb-amt { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: var(--text-mid); flex-shrink: 0; margin-left: 6px; }
+    .cb-amt { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--text-mid); flex-shrink: 0; margin-left: 6px; }
     .cb-track { height: 4px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
     .cb-fill { height: 100%; background: linear-gradient(90deg, var(--primary-dim) 0%, var(--primary) 100%); border-radius: 2px; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
 
@@ -584,20 +644,20 @@
     .line-chart-svg { width: 100%; overflow: visible; display: block; }
 
     .lc-grid-line { stroke: var(--border); stroke-width: 1; }
-    .lc-grid-label { font-size: 9px; fill: var(--text-light); font-family: 'Sora', sans-serif; }
-    .lc-month-label { font-size: 10px; fill: var(--text-light); font-family: 'Sora', sans-serif; font-weight: 700; text-anchor: middle; }
+    .lc-grid-label { font-size: 9px; fill: var(--text-light); font-family: var(--font-ui); }
+    .lc-month-label { font-size: 10px; fill: var(--text-light); font-family: var(--font-ui); font-weight: 700; text-anchor: middle; }
     .lc-month-label.cur { fill: var(--primary); }
 
     .lc-area { opacity: 0.12; }
     .lc-line { fill: none; stroke: var(--primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .lc-dot { fill: var(--surface); stroke: var(--primary); stroke-width: 2; }
     .lc-dot.cur { fill: var(--primary); r: 5; }
-    .lc-dot-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; fill: var(--text-mid); text-anchor: middle; }
+    .lc-dot-label { font-family: var(--font-mono); font-size: 9px; fill: var(--text-mid); text-anchor: middle; }
     .lc-dot-label.cur { fill: var(--primary); font-weight: 700; }
 
     /* weekly budget reference line (Juntos view only) */
     .lc-budget-line  { stroke: var(--warn); stroke-width: 1.5; stroke-dasharray: 5 3; opacity: 0.6; }
-    .lc-budget-label { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; fill: var(--warn); opacity: 0.9; }
+    .lc-budget-label { font-family: var(--font-mono); font-size: 8.5px; fill: var(--warn); opacity: 0.9; }
     .lc-dot.over       { fill: var(--warn); stroke: var(--warn); }
     .lc-dot-label.over { fill: var(--warn); font-weight: 700; }
 
@@ -605,9 +665,9 @@
     .bar-chart-svg { width: 100%; overflow: visible; display: block; }
     .bc-base { stroke: var(--border); stroke-width: 1; }
     .bc-seg  { }  /* fill set inline per category */
-    .bc-val  { font-family: 'JetBrains Mono', monospace; font-size: 9px; fill: var(--text-mid); text-anchor: middle; }
+    .bc-val  { font-family: var(--font-mono); font-size: 9px; fill: var(--text-mid); text-anchor: middle; }
     .bc-val.cur { fill: var(--primary); font-weight: 700; }
-    .bc-lbl  { font-size: 10px; fill: var(--text-light); font-family: 'Sora', sans-serif; font-weight: 700; text-anchor: middle; text-transform: uppercase; }
+    .bc-lbl  { font-size: 10px; fill: var(--text-light); font-family: var(--font-ui); font-weight: 700; text-anchor: middle; text-transform: uppercase; }
     .bc-lbl.cur { fill: var(--primary); }
 
     .bc-legend { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 12px; }
@@ -620,14 +680,14 @@
       position: absolute; left: 0; top: 0; z-index: 12; display: none;
       min-width: 134px; max-width: 210px;
       background: var(--surface-3); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 9px 11px; box-shadow: var(--shadow);
+      border-radius: var(--radius-sm); padding: 9px 11px; box-shadow: var(--card-edge), var(--shadow);
     }
     .chart-tip.show { display: block; }
     .chart-tip-head { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; font-weight: 700; margin-bottom: 5px; }
-    .chart-tip-head .ct-total { font-family: 'JetBrains Mono', monospace; color: var(--primary); }
+    .chart-tip-head .ct-total { font-family: var(--font-mono); color: var(--primary); }
     .chart-tip-row { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--text-mid); margin-top: 4px; }
     .chart-tip-row i { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
-    .chart-tip-row .ct-amt { margin-left: auto; font-family: 'JetBrains Mono', monospace; color: var(--text); }
+    .chart-tip-row .ct-amt { margin-left: auto; font-family: var(--font-mono); color: var(--text); }
 
     /* DELETE */
     .exp-item { position: relative; flex-direction: column; align-items: stretch; padding: 0; overflow: hidden; }
@@ -654,7 +714,7 @@
 
     .exp-del-btn {
       padding: 5px 12px; border-radius: 8px; border: none;
-      font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700;
+      font-family: var(--font-ui); font-size: 11px; font-weight: 700;
       cursor: pointer; transition: all var(--t);
     }
 
@@ -677,7 +737,7 @@
 
     .filter-chip {
       padding: 6px 13px; border-radius: 20px; border: 1.5px solid var(--border);
-      font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700;
+      font-family: var(--font-ui); font-size: 11px; font-weight: 700;
       cursor: pointer; background: var(--surface); color: var(--text-mid);
       white-space: nowrap; transition: all var(--t); flex-shrink: 0;
     }
@@ -700,13 +760,13 @@
     .exp-meta { font-size: 10px; color: var(--text-light); }
     .exp-tipo-ic { width: 11px; height: 11px; stroke: var(--primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -1.5px; margin-right: 1px; }
     .exp-right { text-align: right; flex-shrink: 0; }
-    .exp-monto { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; }
+    .exp-monto { font-family: var(--font-mono); font-size: 15px; font-weight: 700; }
     .exp-cur { font-size: 9px; color: var(--text-light); font-weight: 700; margin-top: 2px; letter-spacing: 0.5px; }
 
     /* STATES */
     .empty-state { text-align: center; padding: 48px 20px 24px; }
     .empty-state .ee { font-size: 40px; display: block; margin-bottom: 10px; }
-    .empty-state .et { font-size: 15px; font-weight: 600; color: var(--text-mid); margin-bottom: 5px; }
+    .empty-state .et { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--text-mid); margin-bottom: 5px; }
     .empty-state .es { font-size: 12px; color: var(--text-light); }
 
     .loading-dots { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 32px; }
@@ -880,16 +940,17 @@
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
+  <span class="nav-indicator" id="nav-indicator"></span>
   <button class="nav-btn active" id="nav-form" onclick="showView('form')">
-    <svg width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><use href="#ic-pencil"/></svg>
+    <svg width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><use href="#ic-pencil"/></svg>
     <span class="nav-label">Registrar</span>
   </button>
   <button class="nav-btn" id="nav-dashboard" onclick="showView('dashboard')">
-    <svg width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><use href="#ic-chart"/></svg>
+    <svg width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><use href="#ic-chart"/></svg>
     <span class="nav-label">Resumen</span>
   </button>
   <button class="nav-btn" id="nav-history" onclick="showView('history')">
-    <svg width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><use href="#ic-list"/></svg>
+    <svg width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><use href="#ic-list"/></svg>
     <span class="nav-label">Historial</span>
   </button>
 </nav>
@@ -949,6 +1010,7 @@
     CATS.forEach((c, i) => {
       const btn = document.createElement('button');
       btn.className = 'cat-btn';
+      btn.style.setProperty('--cat-c', CAT_COLORS[i]);
       btn.innerHTML = `<svg width="20" height="20" stroke="currentColor" stroke-width="1.8" fill="none"><use href="#ic-${c.iconId}"/></svg><span class="c-label">${c.label}</span>`;
       btn.addEventListener('click', () => selectCat(i, btn));
       grid.appendChild(btn);
@@ -982,6 +1044,10 @@
     document.addEventListener('click', e => {
       if (tipPinned && !e.target.closest('#month-chart') && !e.target.closest('#month-tip')) hideMonthTip();
     });
+
+    moveNavIndicator();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveNavIndicator);
+    window.addEventListener('resize', moveNavIndicator);
   }
 
   function showMonthTip(i, pin) {
@@ -1020,6 +1086,8 @@
     theme = t;
     document.documentElement.setAttribute('data-theme', t);
     if (save) localStorage.setItem('gastos_theme', t);
+    const tc = document.querySelector('meta[name="theme-color"]');
+    if (tc) tc.setAttribute('content', t === 'dark' ? '#0C0806' : '#F8F3EE');
     // dark mode → show sun (to switch to light); light mode → show moon
     const sun  = document.querySelector('.icon-sun');
     const moon = document.querySelector('.icon-moon');
@@ -1064,9 +1132,23 @@
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
     document.getElementById('view-' + v).classList.add('active');
     document.getElementById('nav-' + v).classList.add('active');
+    moveNavIndicator();
     // the Fer/Sofi switch only matters when registering — hide it elsewhere
     document.querySelector('.who-sel').style.display = (v === 'form') ? '' : 'none';
     if (v === 'dashboard' || v === 'history') loadData();
+  }
+
+  // slide the pill behind the active nav button
+  function moveNavIndicator() {
+    const nav = document.querySelector('.bottom-nav');
+    const btn = document.querySelector('.nav-btn.active');
+    const ind = document.getElementById('nav-indicator');
+    if (!nav || !btn || !ind) return;
+    const pad  = parseFloat(getComputedStyle(nav).paddingLeft) || 0;
+    const navL = nav.getBoundingClientRect().left + pad;
+    const b    = btn.getBoundingClientRect();
+    ind.style.width = b.width + 'px';
+    ind.style.transform = `translateX(${b.left - navL}px)`;
   }
 
   // Local date as YYYY-MM-DD — never use toISOString() here, it's UTC and
