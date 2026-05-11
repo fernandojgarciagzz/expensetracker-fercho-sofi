@@ -101,7 +101,7 @@
       --radius-sm: 12px;
       --radius-md: 18px;
       --radius-lg: 24px;
-      --nav-h: 68px;
+      --nav-h: 78px;
       --safe-b: env(safe-area-inset-bottom, 10px);
       --t: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
       --spring: 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -475,19 +475,20 @@
     }
 
     .nav-btn {
-      flex: 1; padding: 11px 8px 8px; border: none; background: transparent;
+      flex: 1; padding: 13px 8px 11px; border: none; background: transparent;
       cursor: pointer; display: flex; flex-direction: column;
-      align-items: center; gap: 3px; position: relative;
+      align-items: center; gap: 5px; position: relative;
     }
 
-    .nav-btn svg { width: 20px; height: 20px; stroke: var(--text-light); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--t); }
-    .nav-label { font-size: 9px; font-weight: 700; color: var(--text-light); letter-spacing: 0.4px; text-transform: uppercase; transition: color var(--t); }
+    .nav-btn svg { width: 23px; height: 23px; stroke: var(--text-light); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--t); }
+    .nav-label { font-size: 10px; font-weight: 700; color: var(--text-light); letter-spacing: 0.4px; text-transform: uppercase; transition: color var(--t); }
 
     .nav-btn.active svg { stroke: var(--primary); }
     .nav-btn.active .nav-label { color: var(--primary); }
+    .nav-btn:active { transform: scale(0.94); }
     .nav-btn.active::after {
       content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-      width: 24px; height: 2px; background: var(--primary); border-radius: 0 0 3px 3px;
+      width: 30px; height: 2.5px; background: var(--primary); border-radius: 0 0 3px 3px;
     }
 
     /* DASHBOARD */
@@ -632,7 +633,7 @@
     .exp-item { position: relative; flex-direction: column; align-items: stretch; padding: 0; overflow: hidden; }
 
     .exp-item-main {
-      display: flex; align-items: center; gap: 11px;
+      display: flex; align-items: flex-start; gap: 11px;
       padding: 13px 14px;
     }
 
@@ -692,10 +693,12 @@
     }
     .exp-item:active { transform: scale(0.98); }
 
-    .exp-icon { width: 42px; height: 42px; border-radius: 12px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .exp-icon { width: 42px; height: 42px; border-radius: 12px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-mid); }
+    .exp-icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .exp-info { flex: 1; min-width: 0; }
     .exp-desc { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
     .exp-meta { font-size: 10px; color: var(--text-light); }
+    .exp-tipo-ic { width: 11px; height: 11px; stroke: var(--primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -1.5px; margin-right: 1px; }
     .exp-right { text-align: right; flex-shrink: 0; }
     .exp-monto { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; }
     .exp-cur { font-size: 9px; color: var(--text-light); font-weight: 700; margin-top: 2px; letter-spacing: 0.5px; }
@@ -955,16 +958,23 @@
     const ms  = now.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
     document.getElementById('dash-month').textContent = ms.charAt(0).toUpperCase() + ms.slice(1);
 
-    // monthly chart: hover (desktop) or tap (touch) a bar to see its breakdown
+    // monthly chart: hover (mouse) or tap (touch) a bar to see its breakdown.
+    // Touch is driven by 'click' only — the hover handlers ignore touch pointers
+    // so a tap doesn't flicker the tooltip on/off.
     const mc = document.getElementById('month-chart');
-    mc.addEventListener('mouseover', e => { const r = e.target.closest && e.target.closest('.bc-hit'); if (r && !tipPinned) showMonthTip(+r.dataset.i, false); });
-    mc.addEventListener('mouseout',  e => {
-      const r = e.target.closest && e.target.closest('.bc-hit'); if (!r || tipPinned) return;
+    const hitOf = e => (e.target && e.target.closest) ? e.target.closest('.bc-hit') : null;
+    mc.addEventListener('pointerover', e => {
+      if (e.pointerType === 'touch' || tipPinned) return;
+      const r = hitOf(e); if (r) showMonthTip(+r.dataset.i, false);
+    });
+    mc.addEventListener('pointerout', e => {
+      if (e.pointerType === 'touch' || tipPinned) return;
+      if (!hitOf(e)) return;
       const to = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.bc-hit');
       if (!to) hideMonthTip();
     });
     mc.addEventListener('click', e => {
-      const r = e.target.closest && e.target.closest('.bc-hit'); if (!r) return;
+      const r = hitOf(e); if (!r) return;
       const i = +r.dataset.i;
       (tipPinned && tipIndex === i) ? hideMonthTip() : showMonthTip(i, true);
     });
@@ -1054,6 +1064,8 @@
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
     document.getElementById('view-' + v).classList.add('active');
     document.getElementById('nav-' + v).classList.add('active');
+    // the Fer/Sofi switch only matters when registering — hide it elsewhere
+    document.querySelector('.who-sel').style.display = (v === 'form') ? '' : 'none';
     if (v === 'dashboard' || v === 'history') loadData();
   }
 
@@ -1483,7 +1495,9 @@
   }
 
   function renderHistory() {
-    const fd = filter === 'all' ? data : data.filter(e => e.Quien === filter);
+    // always newest date first; stable sort keeps within-day order (latest logged first)
+    const fd = (filter === 'all' ? [...data] : data.filter(e => String(e.Quien || '').trim() === filter))
+      .sort((a, b) => str10(b.Fecha).localeCompare(str10(a.Fecha)));
     const el = document.getElementById('expense-list');
 
     if (!fd.length) {
@@ -1494,13 +1508,14 @@
     el.innerHTML = fd.map((e, i) => {
       const raw   = str10(e.Fecha);
       const fecha = raw ? new Date(raw + 'T12:00:00').toLocaleDateString('es-MX', { day:'numeric', month:'short' }) : '';
+      const cat   = e.Categoria || 'Otros';
       const desc  = e.Descripcion || e.Categoria || '—';
       const ts    = esc(e.Timestamp || '');
-      const tipo  = e.Tipo ? `<span style="color:var(--primary);margin-right:2px">${e.Tipo === 'Juntos' ? '👥' : '👤'}</span> ` : '';
+      const tipo  = e.Tipo ? `<svg class="exp-tipo-ic" viewBox="0 0 24 24"><use href="#ic-${e.Tipo === 'Juntos' ? 'users' : 'user'}"/></svg> ` : '';
 
       return `<div class="exp-item" id="item-${i}">
         <div class="exp-item-main">
-          <div class="exp-icon">${e.Emoji || '💸'}</div>
+          <div class="exp-icon" style="color:${catColor(cat)}"><svg viewBox="0 0 24 24"><use href="#ic-${catIcon(cat)}"/></svg></div>
           <div class="exp-info">
             <div class="exp-desc">${esc(desc)}</div>
             <div class="exp-meta">${tipo}${esc(e.Categoria||'')} · ${esc(e.Quien||'')} · ${fecha}</div>
