@@ -12,7 +12,8 @@ Live en: https://fernandojgarciagzz.github.io/expensetracker-fercho-sofi
 - Hosting: GitHub Pages
 
 ## Apps Script URL
-https://script.google.com/macros/s/AKfycbxKqVelLnlv4IzXxine6VwZKIYVzl-h1OlPtwECsOU1Ct7t6r4CkE8M4kj7f058ePWDvw/exec
+https://script.google.com/macros/s/AKfycbz2gocfUYljQRFtCeTl4uwzM8R7JWUP_nMnWoJEkXFpseVNmDQoalUqQ4ZTcWWC_dZpzw/exec
+(Si se cambia el código del Apps Script, lo más limpio es editar ESTE deployment a "New version" para no cambiar la URL otra vez. Si se hace un deployment nuevo, hay que actualizar `APPS_SCRIPT_URL` en index.html con la URL nueva.)
 
 ## Google Sheet — columnas
 - Pestaña "Gastos":  Timestamp | Fecha | Monto | Moneda | Tipo | Categoria | Emoji | Descripcion | Quien
