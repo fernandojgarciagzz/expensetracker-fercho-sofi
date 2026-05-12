@@ -15,12 +15,22 @@ Live en: https://fernandojgarciagzz.github.io/expensetracker-fercho-sofi
 https://script.google.com/macros/s/AKfycbxKqVelLnlv4IzXxine6VwZKIYVzl-h1OlPtwECsOU1Ct7t6r4CkE8M4kj7f058ePWDvw/exec
 
 ## Google Sheet — columnas
-Timestamp | Fecha | Monto | Moneda | Tipo | Categoria | Emoji | Descripcion | Quien
+- Pestaña "Gastos":  Timestamp | Fecha | Monto | Moneda | Tipo | Categoria | Emoji | Descripcion | Quien
+- Pestaña "Ahorros": Timestamp | Fecha | Monto | Moneda | Destino | Nota | Quien   (la crea sola el Apps Script vía `getAhorrosSheet_()` la primera vez que algo la usa)
+
+## Apps Script — endpoints
+- GET `?action=getData`     → filas de "Gastos"  (default si no hay action)
+- GET `?action=getAhorros`  → filas de "Ahorros"
+- POST `{fecha,monto,moneda,tipo,categoria,emoji,descripcion,quien}`      → agrega un gasto
+- POST `{action:'delete', timestamp}`                                     → borra un gasto
+- POST `{action:'addAhorro', fecha,monto,moneda,destino,nota,quien}`      → agrega un aporte de ahorro
+- POST `{action:'deleteAhorro', timestamp}`                               → borra un aporte
+- (El POST es text/plain — "simple request", sin CORS preflight. Si cambias el Apps Script hay que re-deployar; si editas el deployment existente a "New version" la URL NO cambia.)
 
 ## Features implementadas
 - Registro de gastos con voz (Web Speech API, es-MX)
 - Dark/light mode con toggle, guardado en localStorage
-- 3 vistas: Registrar / Resumen / Historial
+- 4 vistas: Registrar / Resumen / Ahorros / Historial
 - Tipos: Personal (no cuenta al budget) y Juntos (cuenta al budget semanal)
 - Budget semanal: $2,000 MXN, semana lunes-domingo
 - Categorías (12): Restaurantes, Súper, Transporte, Entrete., Ropa, Salud, Casa, Suscripc., Viajes, Regalos, Personal, Otros
@@ -31,9 +41,10 @@ Timestamp | Fecha | Monto | Moneda | Tipo | Categoria | Emoji | Descripcion | Qu
 - El título de "Por categoría" muestra el mes actual (es la única gráfica que cubre solo el mes en curso; las otras dos cubren 8 semanas / 6 meses)
 - El switch Fer/Sofi del header (es "quién registra") solo se muestra en la vista Registrar; en Resumen y Historial se oculta. El Historial tiene su propio filtro por persona (chips Todos / Fernando / Sofi) que filtra por la columna Quien
 - El Historial siempre se ordena por fecha descendente (más reciente arriba); en empate del mismo día, lo registrado más recientemente va primero
-- Conversión USD→MXN: gastos en USD se convierten al tipo de cambio diario de su fecha (frankfurter.app, datos del ECB, sin API key) y así cuentan en las gráficas Y en el budget semanal. Los cards "MXN este mes" / "USD este mes" siguen mostrando el monto literal de cada moneda. Los tipos de cambio se cachean en localStorage ('gastos_fx'); 1 request por día como máximo. Si no hay USD nunca se llama el API. Fallback si el API falla: último tipo cacheado, o 18 (USD_MXN_FALLBACK)
-- Borrar gastos con confirmación
+- Conversión USD→MXN: gastos (y ahorros) en USD se convierten al tipo de cambio diario de su fecha (frankfurter.app, datos del ECB, sin API key) y así cuentan en las gráficas Y en el budget semanal. Los cards "MXN este mes" / "USD este mes" siguen mostrando el monto literal de cada moneda. Los tipos de cambio se cachean en localStorage ('gastos_fx'); 1 request por día como máximo. `ensureFxRates()` considera fechas USD tanto de `data` (gastos) como de `ahData` (ahorros). Fallback si el API falla: último tipo cacheado, o 18 (USD_MXN_FALLBACK)
+- Borrar gastos / aportes con confirmación
 - Monedas: MXN y USD por separado
+- **Ahorros** (pestaña aparte, totalmente separada de gastos): registrar un aporte (monto + moneda + Destino [input con datalist autocompletado de destinos usados] + nota opcional + fecha). Vistas: total acumulado (hero, en verde --success), aportes este mes, "Por destino" en barras (color por destino vía `destColor()` — hash al palette CAT_COLORS), "Aportes por mes" (barras de 6 meses, en verde), e historial de aportes (con divisores de fecha y borrar, igual que el de gastos). Funciones: `loadAhorros / submitAhorro / confirmDeleteAhorro / renderAhorros / renderAhMonthChart / renderAhList / renderAhDestinos / ahSetCurrency / destColor`. `loadAhorros` tiene un guard: si el Apps Script no está re-deployado (devuelve filas de gastos), muestra "Falta re-deployar".
 
 ## Íconos
 SVG sprite inline en el HTML — no usa Lucide CDN. Todos los íconos están definidos como <symbol> en el <head>.
