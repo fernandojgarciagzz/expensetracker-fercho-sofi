@@ -1,0 +1,14 @@
+{
+  "name": "De Dos · gastos de Fercho & Sofi",
+  "short_name": "SF",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0C0806",
+  "theme_color": "#0C0806",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -38,6 +38,12 @@ Timestamp | Fecha | Monto | Moneda | Tipo | Categoria | Emoji | Descripcion | Qu
 ## Íconos
 SVG sprite inline en el HTML — no usa Lucide CDN. Todos los íconos están definidos como <symbol> en el <head>.
 
+## "Agregar a inicio" (PWA básico)
+- En iOS (Compartir → Agregar a inicio) se instala como app: ícono de billete, etiqueta "SF", abre en modo standalone (sin la barra de Safari).
+- `icon.png` (512×512) es el ícono real; se generó de `icon.svg` con `qlmanage -t -s 512 -o . icon.svg` (no hay rsvg/cairosvg/IM en la máquina). Si cambias `icon.svg`, re-genera el PNG igual.
+- Tags relevantes en el `<head>`: `apple-touch-icon`, `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-mobile-web-app-title="SF"`, y `manifest.json` (para Android/Chrome). `theme_color`/`background_color` del manifest = `#0C0806` (el bg del tema oscuro, default de la app).
+- Estos archivos (icon.png, manifest.json) viven en la raíz del repo porque GitHub Pages los sirve desde ahí, mismo origen que `index.html`.
+
 ## Importante al editar
 - No uses librerías externas de charts (Chart.js, etc.) — las gráficas son SVG puro
 - No rompas la estructura del sprite de íconos
