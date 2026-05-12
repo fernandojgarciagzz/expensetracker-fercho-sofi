@@ -94,6 +94,10 @@
     <symbol id="ic-trending-up" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
     </symbol>
+    <symbol id="ic-coins" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>
+      <path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>
+    </symbol>
     <!-- ui -->
     <symbol id="ic-calendar" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -566,6 +570,7 @@
     }
     .submit-btn:active { transform: scale(0.97); box-shadow: 0 2px 8px var(--primary-glow); }
     .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+    .submit-btn + .sec-card { margin-top: var(--sec-gap); }   /* breathing room before the Ahorros charts */
 
     /* TOAST */
     .toast {
@@ -1043,17 +1048,6 @@
     <div class="dash-sub">cuánto hemos apartado</div>
   </div>
 
-  <div class="budget-card">
-    <div class="budget-top">
-      <div class="budget-title">Total ahorrado</div>
-      <div class="budget-dates" id="ah-count">— aportes</div>
-    </div>
-    <div class="budget-hero">
-      <div class="budget-remaining-amount ok" id="ah-total">—</div>
-      <div class="budget-remaining-label" id="ah-month">— este mes</div>
-    </div>
-  </div>
-
   <div class="sec-label">Registrar aporte</div>
   <div class="amount-card">
     <div class="field-label">¿Cuánto apartaste?</div>
@@ -1077,16 +1071,27 @@
   <button class="submit-btn" id="ah-submit-btn" onclick="submitAhorro()">Registrar aporte</button>
 
   <div class="sec-card">
-    <div class="sec-card-title">Por destino · MXN</div>
-    <div class="cat-bars" id="ah-bars">
-      <div class="loading-dots"><span></span><span></span><span></span></div>
+    <div class="sec-card-title">Total ahorrado por mes · MXN</div>
+    <div class="line-chart-wrap">
+      <svg class="bar-chart-svg" id="ah-month-chart" height="140"></svg>
+    </div>
+  </div>
+
+  <div class="budget-card">
+    <div class="budget-top">
+      <div class="budget-title">Total ahorrado</div>
+      <div class="budget-dates" id="ah-count">— aportes</div>
+    </div>
+    <div class="budget-hero">
+      <div class="budget-remaining-amount ok" id="ah-total">—</div>
+      <div class="budget-remaining-label" id="ah-month">— este mes</div>
     </div>
   </div>
 
   <div class="sec-card">
-    <div class="sec-card-title">Aportes por mes · MXN</div>
-    <div class="line-chart-wrap">
-      <svg class="bar-chart-svg" id="ah-month-chart" height="140"></svg>
+    <div class="sec-card-title">Total por destino · MXN</div>
+    <div class="cat-bars" id="ah-bars">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
     </div>
   </div>
 
@@ -1110,7 +1115,7 @@
     <span class="nav-label">Resumen</span>
   </button>
   <button class="nav-btn" id="nav-ahorros" onclick="showView('ahorros')">
-    <svg width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><use href="#ic-trending-up"/></svg>
+    <svg width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><use href="#ic-coins"/></svg>
     <span class="nav-label">Ahorros</span>
   </button>
   <button class="nav-btn" id="nav-history" onclick="showView('history')">
@@ -1874,8 +1879,13 @@
         const rows = json.data || [];
         // safety: a stale Apps Script deployment (old code) ignores ?action and returns GASTOS rows
         if (rows.length && rows[0].Destino === undefined && rows[0].Categoria !== undefined) {
-          document.getElementById('ah-list').innerHTML =
-            `<div class="empty-state"><span class="ee">⚠️</span><div class="et">Falta re-deployar el Apps Script</div><div class="es">Deploy → Manage deployments → New version</div></div>`;
+          const msg = `<div class="empty-state"><span class="ee">⚠️</span><div class="et">Falta re-deployar el Apps Script</div><div class="es">Deploy → Manage deployments → ✎ → New version</div></div>`;
+          document.getElementById('ah-list').innerHTML  = msg;
+          document.getElementById('ah-bars').innerHTML  = msg;
+          document.getElementById('ah-month-chart').innerHTML = '';
+          document.getElementById('ah-total').textContent = '—';
+          document.getElementById('ah-count').textContent = '—';
+          document.getElementById('ah-month').textContent = '';
           return;
         }
         ahData = [...rows].reverse();
@@ -1971,7 +1981,7 @@
     barsEl.innerHTML = !sortedDest.length
       ? `<div class="empty-state"><span class="ee">🐷</span><div class="es">Aún no hay aportes</div></div>`
       : sortedDest.map(([d, v]) => `<div class="cb-item">
-          <div class="cb-icon" style="color:${destColor(d)}"><svg viewBox="0 0 24 24"><use href="#ic-trending-up"/></svg></div>
+          <div class="cb-icon" style="color:${destColor(d)}"><svg viewBox="0 0 24 24"><use href="#ic-coins"/></svg></div>
           <div class="cb-info">
             <div class="cb-header"><span class="cb-name">${esc(d)}</span><span class="cb-amt">$${fmt(v)}</span></div>
             <div class="cb-track"><div class="cb-fill" style="width:${((v / maxDest) * 100).toFixed(1)}%;background:${destColor(d)}"></div></div>
@@ -2048,12 +2058,13 @@
       const dst  = String(e.Destino || '').trim() || 'Sin destino';
       const nta  = String(e.Nota || '').trim();
       const ts   = esc(e.Timestamp || '');
-      const meta = (nta ? esc(nta) + ' · ' : '') + esc(dispName(e.Quien));
+      const desc = nta || dst;                                          // la nota es la "descripción"; si no hay, el destino
+      const meta = (nta ? esc(dst) + ' · ' : '') + esc(dispName(e.Quien));
       html += `<div class="exp-item" id="ah-item-${idx}">
         <div class="exp-item-main">
-          <div class="exp-icon" style="color:${destColor(dst)}"><svg viewBox="0 0 24 24"><use href="#ic-trending-up"/></svg></div>
+          <div class="exp-icon" style="color:${destColor(dst)}"><svg viewBox="0 0 24 24"><use href="#ic-coins"/></svg></div>
           <div class="exp-info">
-            <div class="exp-desc">${esc(dst)}</div>
+            <div class="exp-desc">${esc(desc)}</div>
             <div class="exp-meta">${meta}</div>
           </div>
           <div class="exp-right">
