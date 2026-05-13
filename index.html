@@ -1223,6 +1223,10 @@
     moveNavIndicator();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveNavIndicator);
     window.addEventListener('resize', moveNavIndicator);
+
+    // restore the last-active view from localStorage (skip if it was Registrar — already the default)
+    const saved = localStorage.getItem('gastos_view');
+    if (['dashboard', 'ahorros', 'history'].includes(saved)) showView(saved);
   }
 
   function showMonthTip(i, pin) {
@@ -1307,6 +1311,7 @@
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
     document.getElementById('view-' + v).classList.add('active');
     document.getElementById('nav-' + v).classList.add('active');
+    localStorage.setItem('gastos_view', v);   // remember last tab across refresh
     moveNavIndicator();
     // the Fercho/Sofi switch matters when registering (gasto o aporte) — hide it elsewhere
     document.querySelector('.who-sel').style.display = (v === 'form' || v === 'ahorros') ? '' : 'none';
