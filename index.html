@@ -886,6 +886,12 @@
     .exp-info { flex: 1; min-width: 0; }
     .exp-desc { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
     .exp-meta { font-size: 10px; color: var(--text-light); }
+    .retry-btn {
+      margin-top: 14px; padding: 9px 20px; border-radius: 10px; cursor: pointer;
+      border: 1px solid var(--border); background: var(--surface-2);
+      color: var(--text); font-family: var(--font-ui); font-size: 13px; font-weight: 700;
+    }
+    .retry-btn:active { transform: scale(0.97); }
     /* queued offline, not on the Sheet yet */
     .exp-pending {
       display: inline-block; margin-left: 6px; padding: 1px 5px; border-radius: 5px;
@@ -1265,7 +1271,16 @@
 
   // fetch with a deadline. Cellular failure mode is a socket that hangs open,
   // not a clean error — without this the UI sits on "Guardando…" forever.
-  function fetchT(url, opts = {}, ms = 12000) {
+  //
+  // 60s, NOT something snappy: Apps Script cold-starts are brutal (measured
+  // 34.7s on a wired connection, ~4-5s once warm, plus 3 redirects through
+  // googleusercontent). A 12s deadline killed perfectly good requests and made
+  // Resumen/Historial show "Sin conexión" on the first open of the day.
+  // It's also a correctness bound on writes: aborting a POST that the Sheet
+  // already committed would re-queue it and duplicate the expense on flush.
+  // A genuinely dead network rejects on connect in milliseconds and never
+  // reaches this — the deadline only catches a hung socket.
+  function fetchT(url, opts = {}, ms = 60000) {
     const ac = new AbortController();
     const t  = setTimeout(() => ac.abort(), ms);
     return fetch(url, { ...opts, signal: ac.signal }).finally(() => clearTimeout(t));
@@ -1527,6 +1542,10 @@
   async function loadData() {
     if (busy) return;
     busy = true;
+    // Nothing cached yet (first ever open) and Apps Script can take ~35s to
+    // wake up — say so instead of leaving an empty screen that reads as broken.
+    if (!data.length) document.getElementById('expense-list').innerHTML =
+      `<div class="empty-state"><span class="ee">⏳</span><div class="et">Cargando…</div><div class="es">La primera carga del día tarda un poco</div></div>`;
     try {
       const res  = await fetchT(APPS_SCRIPT_URL + '?action=getData', { cache: 'no-store' });
       const json = await res.json();
@@ -1545,7 +1564,8 @@
       data = lsGet('gastos_cache', []).concat(pendingRows('gasto'));
       if (data.length) { renderDash(); renderHistory(); }
       else document.getElementById('expense-list').innerHTML =
-        `<div class="empty-state"><span class="ee">⚠️</span><div class="et">Sin conexión</div><div class="es">Revisa tu internet</div></div>`;
+        `<div class="empty-state"><span class="ee">⚠️</span><div class="et">No se pudo cargar</div><div class="es">Revisa tu conexión</div>
+           <button class="retry-btn" onclick="loadData()">Reintentar</button></div>`;
     } finally { busy = false; }
   }
 
@@ -1588,7 +1608,9 @@
       // itself carries no CORS headers, so the browser blocks it — every rate
       // lookup was failing silently and falling back to USD_MXN_FALLBACK.
       // Point at the new host directly; same JSON shape, same free/no-key terms.
-      const res = await fetchT(`https://api.frankfurter.dev/v1/${start}..${today}?from=USD&to=MXN`);
+      // 15s is plenty here — this one is best-effort background work (that host
+      // 522s now and then), and failing just keeps the cached rates.
+      const res = await fetchT(`https://api.frankfurter.dev/v1/${start}..${today}?from=USD&to=MXN`, {}, 15000);
       if (!res.ok) return false;
       const j = await res.json();
       if (!j || !j.rates) return false;
@@ -2034,6 +2056,8 @@
   async function loadAhorros() {
     if (ahBusy) return;
     ahBusy = true;
+    if (!ahData.length) document.getElementById('ah-list').innerHTML =
+      `<div class="empty-state"><span class="ee">⏳</span><div class="et">Cargando…</div><div class="es">La primera carga del día tarda un poco</div></div>`;
     try {
       const res  = await fetchT(APPS_SCRIPT_URL + '?action=getAhorros', { cache: 'no-store' });
       const json = await res.json();
@@ -2061,7 +2085,8 @@
       ahData = lsGet('ahorros_cache', []).concat(pendingRows('ahorro'));
       if (ahData.length) { renderAhDestinos(); renderAhorros(); }
       else document.getElementById('ah-list').innerHTML =
-        `<div class="empty-state"><span class="ee">⚠️</span><div class="et">Sin conexión</div><div class="es">Revisa tu internet</div></div>`;
+        `<div class="empty-state"><span class="ee">⚠️</span><div class="et">No se pudo cargar</div><div class="es">Revisa tu conexión</div>
+           <button class="retry-btn" onclick="loadAhorros()">Reintentar</button></div>`;
     } finally { ahBusy = false; }
   }
 

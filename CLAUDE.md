@@ -83,8 +83,16 @@ Y sobre todo: **después del primer arranque son 0 requests de red para abrir la
   Funciones: `lsGet / lsSet / enqueue / pendingRow / pendingRows / flushOutbox / dropPending / fetchT`.
 - Borrar una fila `__p__` la saca del outbox (`dropPending`), no le pide nada al Sheet.
 - Los borrados de filas reales siguen siendo online-only (no se encolan).
-- **`fetchT(url, opts, ms)`** — fetch con AbortController y 12 s de límite. En celular la falla
+- **`fetchT(url, opts, ms)`** — fetch con AbortController, **60 s** por default. En celular la falla
   típica es un socket colgado, no un error limpio; sin esto la UI se quedaba en "Guardando…".
+  **No lo bajes.** Apps Script en frío tarda muchísimo (medido: 34.7 s desde una conexión por cable,
+  2–5 s ya caliente, más 2–3 redirects vía googleusercontent). Con 12 s se mataban requests buenos y
+  Resumen/Historial mostraban "Sin conexión" en la primera abierta del día. Y en los POST es un tema
+  de correctitud: abortar un POST que el Sheet **sí** guardó lo vuelve a encolar y duplica el gasto
+  al sincronizar. Una red de verdad muerta rechaza en milisegundos y nunca llega al límite.
+  (frankfurter sí usa 15 s — es background best-effort y ese host a veces da 522.)
+- Mientras carga sin snapshot se pinta "Cargando…", y si falla sale "No se pudo cargar" con botón
+  **Reintentar** (`.retry-btn`) — antes era una pantalla vacía que parecía app rota.
 - **Fuentes self-hosted** en `fonts/*.woff2` con `@font-face` inline en el `<head>` — ya no se pide
   nada a Google. Son los mismos archivos variable-font (subset latin) que servía gstatic, así que
   no cambia nada visual. Ver `fonts/README.md`; **ojo con el rango de peso** (`font-weight: 400 700`),

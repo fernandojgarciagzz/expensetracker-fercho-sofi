@@ -13,7 +13,7 @@
  * BUMP `VERSION` whenever index.html changes, otherwise phones keep serving the
  * old shell until their background refresh happens to land.
  */
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE   = 'dedos-' + VERSION;
 
 // Everything needed to boot with zero network. Same-origin only — a cross-origin
