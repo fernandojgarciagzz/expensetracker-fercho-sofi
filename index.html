@@ -1584,7 +1584,11 @@
     if (fxCache.thru === today && fxCache.from && fxCache.from <= start) return false;  // already covered today
 
     try {
-      const res = await fetch(`https://api.frankfurter.app/${start}..${today}?from=USD&to=MXN`);
+      // api.frankfurter.app now 301s to api.frankfurter.dev, and the redirect
+      // itself carries no CORS headers, so the browser blocks it — every rate
+      // lookup was failing silently and falling back to USD_MXN_FALLBACK.
+      // Point at the new host directly; same JSON shape, same free/no-key terms.
+      const res = await fetchT(`https://api.frankfurter.dev/v1/${start}..${today}?from=USD&to=MXN`);
       if (!res.ok) return false;
       const j = await res.json();
       if (!j || !j.rates) return false;

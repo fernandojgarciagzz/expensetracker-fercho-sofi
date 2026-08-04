@@ -106,5 +106,7 @@ SVG sprite inline en el HTML — no usa Lucide CDN. Todos los íconos están def
 - No rompas la estructura del sprite de íconos
 - Si cambias columnas del Sheet, actualizar también doPost en apps-script.js
 - Cada vez que cambies apps-script.js hay que hacer New Deployment en Google Apps Script (la URL cambia)
-- El único API externo (aparte del Apps Script) es frankfurter.app para tipos de cambio USD→MXN — si algún día falla o cambia, ver `ensureFxRates()` / `usdRateFor()` / `mxnAmount()`
+- El único API externo (aparte del Apps Script) es **api.frankfurter.dev** para tipos de cambio USD→MXN — si algún día falla o cambia, ver `ensureFxRates()` / `usdRateFor()` / `mxnAmount()`.
+  (Ojo: el host viejo `api.frankfurter.app` hace 301 a `.dev` y **el redirect no trae headers CORS**, así que el navegador lo bloquea y la conversión se caía callada al fallback de 18. Si vuelve a pasar algo así, el síntoma es que los gastos en USD se ven ~4% caros y no hay error visible — solo el CORS en la consola.)
+  El endpoint de rango es algo inestable (a veces 522); no importa, `ensureFxRates()` solo marca `fxCache.thru` cuando tuvo éxito, así que reintenta solo en la siguiente carga.
 - `dateStr(d)` da YYYY-MM-DD en hora local — NO usar `toISOString()` para fechas de gasto (es UTC y recorre los gastos de la noche al día siguiente)
