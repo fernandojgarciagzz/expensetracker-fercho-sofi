@@ -76,6 +76,16 @@ Y sobre todo: **después del primer arranque son 0 requests de red para abrir la
     no, porque **iOS 17.4+ le da a las web apps standalone su propio contenedor de almacenamiento**:
     es un registro aparte que tiene que pasar ahí adentro. Círculo vicioso: lo único que la hacía
     funcionar sin red no se instalaba porque instalarlo dependía de que la red estuviera buena.
+  - **TODO fetch dentro del worker lleva deadline (`fetchDeadline`, 10 s).** Éste fue el bug que dejó
+    la app de home screen imposible de abrir: un `fetch()` pelón hacía que `respondWith()` se quedara
+    pendiente para siempre, y **una navegación cuyo `respondWith` nunca resuelve no falla — se cuelga**,
+    que es lo que Safari reporta como *"the server stopped responding"*. Pegaba justo cuando el caché
+    estaba vacío (las versiones viejas usaban `addAll` todo-o-nada, así que una fuente caída dejaba
+    cero cacheado) y entonces TODA navegación tomaba el camino colgado, con wifi incluido. Y como una
+    página que no carga tampoco puede actualizar el worker, se quedaba trabada sola.
+    Si el deadline vence en una navegación y no hay nada en caché, se sirve `offlinePage()` — HTML
+    autocontenido con botón Reintentar. **Sin auto-reload**: una versión previa recargaba cada 5 s y
+    cada intento cuesta otros 10 s de deadline, así que un teléfono sin señal se quedaba en un bucle.
   - **`CRITICAL` vs `OPTIONAL` en el precache.** `addAll()` es todo-o-nada: un solo recurso lento o
     caído y el install entero se rechaza, dejando CERO cacheado — justo el escenario que este worker
     existe para sobrevivir. Solo `./` + `index.html` son obligatorios; íconos y fuentes van con

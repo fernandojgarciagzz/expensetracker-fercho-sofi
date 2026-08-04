@@ -13,7 +13,7 @@
  * BUMP `VERSION` whenever index.html changes, otherwise phones keep serving the
  * old shell until their background refresh happens to land.
  */
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE   = 'dedos-' + VERSION;
 
 // Split deliberately, because addAll() is all-or-nothing: ONE slow or failing
@@ -29,10 +29,13 @@ const OPTIONAL = [                                       // nice to have; never 
 self.addEventListener('install', e => {
   e.waitUntil((async () => {
     const c = await caches.open(CACHE);
-    await c.addAll(CRITICAL);                            // must succeed
-    // allSettled, not all: a font that hangs or 404s must not abort the install.
-    // Whatever misses here gets picked up later by the fetch handler.
-    await Promise.allSettled(OPTIONAL.map(u => c.add(u)));
+    // Deadlined and individually caught: install must ALWAYS complete. A stuck
+    // install leaves a worker that never activates and a cache that stays empty,
+    // which is precisely how the Home Screen app ended up unopenable.
+    await Promise.allSettled(CRITICAL.concat(OPTIONAL).map(async u => {
+      const res = await fetchDeadline(new Request(u, { cache: 'reload' }));
+      if (res && res.ok) await c.put(u, res);
+    }));
     await self.skipWaiting();
   })());
 });
@@ -73,14 +76,35 @@ async function staleWhileRevalidate(req, isNav) {
   try {
     return await swr(req, isNav);
   } catch (_) {
-    try { return safeForNavigation(await fetch(req)); }
-    catch (__) {
-      return new Response('Sin conexión', {
-        status: 503,
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      });
-    }
+    const res = await fetchDeadline(req);          // deadline here too — see below
+    if (res) return safeForNavigation(res);
+    if (isNav) return offlinePage();
+    return new Response('Sin conexión', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
   }
+}
+
+// Every fetch this worker makes MUST have a deadline.
+//
+// This is the bug that made the Home Screen app unopenable: a bare fetch() here
+// meant respondWith() could stay pending forever, and a navigation whose
+// respondWith never settles doesn't fail — it HANGS, which Safari eventually
+// reports as "the server stopped responding". It bit exactly when the cache was
+// empty (older versions used an all-or-nothing addAll, so one failed font left
+// nothing cached), and then every launch took the hanging path, wifi included.
+// A page that can't load also can't update the worker, so it stayed broken.
+//
+// 10s: long enough for a slow-but-alive network, short enough to fall through
+// to something useful. Timing out here is cheap — the app has its own snapshot.
+function fetchDeadline(req, ms = 10000) {
+  return new Promise(resolve => {
+    let done = false;
+    const finish = v => { if (!done) { done = true; resolve(v); } };
+    setTimeout(() => finish(null), ms);
+    fetch(req).then(finish, () => finish(null));
+  });
 }
 
 async function swr(req, isNav) {
@@ -92,20 +116,46 @@ async function swr(req, isNav) {
   const cached = (await cache.match(req, { ignoreSearch: true }))
     || (isNav ? await cache.match('./index.html') || await cache.match('./') : null);
 
-  const fresh = fetch(req)
-    .then(res => { if (res && res.ok) cache.put(req, res.clone()); return res; })
-    .catch(() => null);
+  const fresh = fetchDeadline(req)
+    .then(res => { if (res && res.ok) cache.put(req, res.clone()).catch(() => {}); return res; });
 
   if (cached) return isNav ? safeForNavigation(cached) : cached;
 
   const res = await fresh;
   if (res) return isNav ? safeForNavigation(res) : res;
 
-  // Offline and nothing cached at all.
+  // Nothing cached and the network didn't answer in time. A navigation must get
+  // real HTML — a text/plain 503 renders as raw text with no way out — so hand
+  // back a minimal page that can retry on its own.
+  if (isNav) return offlinePage();
   return new Response('Sin conexión', {
     status: 503,
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
   });
+}
+
+// Self-contained: no CSS, no fonts, no cached assets. Whatever is broken, this
+// renders. Deliberately NO auto-reload — an earlier version retried every 5s and
+// each retry costs a 10s network deadline, so an offline phone would sit in a
+// flashing reload loop burning battery and never settling. A button the user
+// taps is predictable; the loop was not.
+function offlinePage() {
+  return new Response(
+    `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>De Dos</title></head>
+<body style="margin:0;display:grid;place-items:center;min-height:100vh;
+background:#0C0806;color:#F5E9E2;font:15px/1.6 -apple-system,system-ui,sans-serif;text-align:center">
+<div style="padding:24px">
+  <div style="font-size:34px">📴</div>
+  <h1 style="font-size:17px;margin:12px 0 6px">Sin conexión</h1>
+  <p style="margin:0 0 18px;opacity:.7;font-size:13px">No se pudo contactar el servidor.</p>
+  <button onclick="location.reload()" style="padding:11px 22px;border-radius:10px;border:0;
+    background:#E0855A;color:#1a0f0a;font-size:14px;font-weight:700">Reintentar</button>
+</div>
+</body></html>`,
+    { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+  );
 }
 
 // Handing a REDIRECTED response back to a navigation is a hard error in every
