@@ -13,7 +13,7 @@
  * BUMP `VERSION` whenever index.html changes, otherwise phones keep serving the
  * old shell until their background refresh happens to land.
  */
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE   = 'dedos-' + VERSION;
 
 // Split deliberately, because addAll() is all-or-nothing: ONE slow or failing
@@ -67,26 +67,64 @@ self.addEventListener('fetch', e => {
 });
 
 async function staleWhileRevalidate(req, isNav) {
+  // A rejected respondWith() kills the navigation outright — another blank
+  // screen, and this time one the user can't even reload out of. Whatever goes
+  // wrong in here, fall back to a plain network fetch.
+  try {
+    return await swr(req, isNav);
+  } catch (_) {
+    try { return safeForNavigation(await fetch(req)); }
+    catch (__) {
+      return new Response('Sin conexión', {
+        status: 503,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      });
+    }
+  }
+}
+
+async function swr(req, isNav) {
   const cache  = await caches.open(CACHE);
-  const cached = await cache.match(req, { ignoreSearch: true });
+  // For a navigation, ANY cached shell will do — the Home Screen app may launch
+  // a URL that never got cached under that exact key (see the redirect note in
+  // safeForNavigation below), and answering it with index.html is always right
+  // for a single-page app.
+  const cached = (await cache.match(req, { ignoreSearch: true }))
+    || (isNav ? await cache.match('./index.html') || await cache.match('./') : null);
 
   const fresh = fetch(req)
     .then(res => { if (res && res.ok) cache.put(req, res.clone()); return res; })
     .catch(() => null);
 
-  if (cached) return cached;
+  if (cached) return isNav ? safeForNavigation(cached) : cached;
 
   const res = await fresh;
-  if (res) return res;
+  if (res) return isNav ? safeForNavigation(res) : res;
 
-  // Offline and this exact URL was never cached — a navigation can still be
-  // answered with the shell (e.g. launched with a ?query the cache never saw).
-  if (isNav) {
-    const shell = (await cache.match('./index.html')) || (await cache.match('./'));
-    if (shell) return shell;
-  }
+  // Offline and nothing cached at all.
   return new Response('Sin conexión', {
     status: 503,
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  });
+}
+
+// Handing a REDIRECTED response back to a navigation is a hard error in every
+// browser ("a redirected response was used for a navigation request") and the
+// result is a blank white screen with nothing in the UI to explain it.
+//
+// This is how it bit us: GitHub Pages 301s the no-trailing-slash URL
+// (/expensetracker-fercho-sofi -> /expensetracker-fercho-sofi/), and iOS stores
+// whatever URL was on screen when you tapped "Agregar a inicio". So a Home
+// Screen app launched at the no-slash form got a redirected response — blank —
+// while Safari, opened on the slash form, was fine. Same site, same worker.
+//
+// Rebuilding the Response from its body drops the redirect flag; the bytes are
+// identical.
+function safeForNavigation(res) {
+  if (!res || !res.redirected) return res;
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers: res.headers,
   });
 }

@@ -114,8 +114,14 @@ SVG sprite inline en el HTML — no usa Lucide CDN. Todos los íconos están def
 
 ## "Agregar a inicio" (PWA básico)
 - En iOS (Compartir → Agregar a inicio) se instala como app: ícono de billete, etiqueta "SF", abre en modo standalone (sin la barra de Safari).
-- `icon.png` (512×512) es el ícono real; se generó de `icon.svg` con `qlmanage -t -s 512 -o . icon.svg` (no hay rsvg/cairosvg/IM en la máquina). Si cambias `icon.svg`, re-genera el PNG igual — **y vuélvelo a cuantizar**: qlmanage escupe RGBA de 8 bits (76 KB) para un ícono que es un degradado plano con trazos blancos. Con paleta de 128 colores baja a 12 KB sin diferencia visible (drift máximo 6/255):
-  `python3 -c "from PIL import Image; Image.open('icon.png').convert('RGB').quantize(colors=128).save('icon.png', optimize=True)"`
+- **El ícono DEBE ser PNG truecolor (RGB), NO PNG con paleta.** iOS ignora los PNG con paleta
+  (`mode: 'P'`) para el ícono de home screen y pone uno genérico. Ya pasó una vez: cuantizarlo a 128
+  colores lo bajó de 76 KB a 12 KB pero rompió el ícono en el iPhone. La versión buena es RGB sin
+  alpha (el original es 100% opaco, así que quitar el canal alpha no pierde nada): 28 KB y
+  pixel-idéntico. Verifica con `python3 -c "from PIL import Image; print(Image.open('icon.png').mode)"`
+  — tiene que decir `RGB`, nunca `P`.
+- `icon.png` (512×512) es el ícono real; se generó de `icon.svg` con `qlmanage -t -s 512 -o . icon.svg` (no hay rsvg/cairosvg/IM en la máquina). Si cambias `icon.svg`, re-genera el PNG igual — y conviértelo a RGB (sin cuantizar):
+  `python3 -c "from PIL import Image; Image.open('icon.png').convert('RGB').save('icon.png', optimize=True, compress_level=9)"`
 - Tags relevantes en el `<head>`: `apple-touch-icon`, `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-mobile-web-app-title="SF"`, y `manifest.json` (para Android/Chrome). `theme_color`/`background_color` del manifest = `#0C0806` (el bg del tema oscuro, default de la app).
 - Estos archivos (icon.png, manifest.json) viven en la raíz del repo porque GitHub Pages los sirve desde ahí, mismo origen que `index.html`.
 

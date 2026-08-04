@@ -4,6 +4,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>De Dos · Gastos</title>
+
+  <!-- FIRST thing in the document, on purpose.
+       There is no console on a phone, so a JS error in the Home Screen app is
+       invisible: you get a blank screen and no way to tell why. This catches
+       anything that throws — including a parse error in the main script, which
+       runs before any handler that script could install — and paints it on the
+       page. Deliberately dependency-free: no CSS variables, no fonts, no
+       helpers, so it still works when everything else is broken. -->
+  <script>
+    (function () {
+      function show(what, detail) {
+        try {
+          var d = document.createElement('div');
+          d.setAttribute('style', 'position:fixed;inset:0;z-index:99999;overflow:auto;' +
+            'background:#1a0f0a;color:#ffd9c7;font:13px/1.5 -apple-system,system-ui,sans-serif;padding:20px');
+          d.innerHTML = '<div style="font-size:16px;font-weight:700;margin-bottom:10px">⚠️ ' + what + '</div>' +
+            '<pre style="white-space:pre-wrap;word-break:break-word;margin:0 0 16px">' +
+            String(detail).replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }) +
+            '</pre><div style="opacity:.7;font-size:11px">Manda una foto de esta pantalla.</div>';
+          (document.body || document.documentElement).appendChild(d);
+        } catch (_) {}
+      }
+      window.addEventListener('error', function (e) {
+        show('Error de JavaScript', (e.message || 'error') + '\n' + (e.filename || '') + ':' + (e.lineno || '?'));
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        show('Promesa rechazada', (e.reason && (e.reason.stack || e.reason.message)) || e.reason);
+      });
+      // If the app never boots, nothing ever sets this flag — so say so rather
+      // than leaving a blank screen with no explanation.
+      window.__booted = false;
+      setTimeout(function () {
+        if (!window.__booted) {
+          show('La app no arrancó', 'El HTML cargó pero el script no terminó de correr.\n' +
+            'URL: ' + location.href + '\nstandalone: ' + (window.navigator.standalone === true) +
+            '\nSW: ' + ('serviceWorker' in navigator));
+        }
+      }, 8000);
+    })();
+  </script>
   <!-- Fonts are self-hosted (fonts/*.woff2), NOT pulled from Google.
        The old <link> to fonts.googleapis.com blocked first paint until a
        third-party host answered, then chained to a second one (fonts.gstatic.com)
@@ -2474,7 +2514,10 @@
   // no console on a phone. Say what broke instead, and still let the tabs work.
   try {
     init();
+    window.__booted = true;      // tells the watchdog in <head> we got this far
   } catch (err) {
+    window.__booted = true;      // it threw, but the watchdog would only add noise
+
     const box = document.getElementById('expense-list');
     if (box) box.innerHTML =
       `<div class="empty-state"><span class="ee">⚠️</span><div class="et">Error al iniciar</div>
