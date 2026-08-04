@@ -1163,6 +1163,22 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  /* Register the service worker FIRST — before anything else can go wrong.
+   *
+   * This used to hang off window 'load', which was a bug: 'load' only fires once
+   * every subresource has finished, fonts included. On slow cellular that event
+   * arrives very late or not at all, so the worker never registered — and the
+   * app that was supposed to work without network could only install itself when
+   * the network was already good. Safari had it (installed on wifi), the Home
+   * Screen app did not, because iOS 17.4+ gives standalone web apps their own
+   * storage container: a separate registration that has to happen in there.
+   *
+   * Kept out of init() on purpose, so a render error can't stop it either.
+   */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz2gocfUYljQRFtCeTl4uwzM8R7JWUP_nMnWoJEkXFpseVNmDQoalUqQ4ZTcWWC_dZpzw/exec';
 
   const CATS = [
@@ -1355,12 +1371,6 @@
     // restore the last-active view from localStorage (skip if it was Registrar — already the default)
     const saved = localStorage.getItem('gastos_view');
     if (['dashboard', 'ahorros', 'history'].includes(saved)) showView(saved);
-
-    // Keep our own copy of the app shell so a cold launch never waits on the
-    // network. Relative path → scope is the repo subfolder on GitHub Pages.
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
-    }
 
     flushOutbox();   // anything written while offline last session goes up now
   }
@@ -2460,7 +2470,17 @@
     clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2800);
   }
 
-  init();
+  // A thrown init() used to leave a silent blank screen with nothing to go on —
+  // no console on a phone. Say what broke instead, and still let the tabs work.
+  try {
+    init();
+  } catch (err) {
+    const box = document.getElementById('expense-list');
+    if (box) box.innerHTML =
+      `<div class="empty-state"><span class="ee">⚠️</span><div class="et">Error al iniciar</div>
+         <div class="es">${esc(String(err && err.message || err))}</div>
+         <button class="retry-btn" onclick="location.reload()">Recargar</button></div>`;
+  }
 </script>
 </body>
 </html>

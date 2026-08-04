@@ -13,23 +13,28 @@
  * BUMP `VERSION` whenever index.html changes, otherwise phones keep serving the
  * old shell until their background refresh happens to land.
  */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE   = 'dedos-' + VERSION;
 
-// Everything needed to boot with zero network. Same-origin only — a cross-origin
-// URL that 404s would make addAll() reject and the whole install fail.
-// The fonts live here too now, so a cold launch never touches another host.
-const SHELL = [
-  './', './index.html', './icon.png', './manifest.json',
+// Split deliberately, because addAll() is all-or-nothing: ONE slow or failing
+// entry and the whole install rejects, leaving nothing cached — the exact
+// scenario this worker exists to survive. So the app itself is required, and
+// everything cosmetic is best-effort.
+const CRITICAL = ['./', './index.html'];                 // enough to boot offline
+const OPTIONAL = [                                       // nice to have; never blocks install
+  './icon.png', './manifest.json',
   './fonts/fraunces.woff2', './fonts/sora.woff2', './fonts/jetbrains-mono.woff2',
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE)
-      .then(c => c.addAll(SHELL))
-      .then(() => self.skipWaiting())
-  );
+  e.waitUntil((async () => {
+    const c = await caches.open(CACHE);
+    await c.addAll(CRITICAL);                            // must succeed
+    // allSettled, not all: a font that hangs or 404s must not abort the install.
+    // Whatever misses here gets picked up later by the fetch handler.
+    await Promise.allSettled(OPTIONAL.map(u => c.add(u)));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', e => {

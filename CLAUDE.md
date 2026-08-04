@@ -66,10 +66,20 @@ Peso de la carga inicial, medido:
 
 Y sobre todo: **después del primer arranque son 0 requests de red para abrir la app.**
 
-- **`sw.js`** — cachea el app shell (`./`, `index.html`, `icon.png`, `manifest.json`, `fonts/*.woff2`)
-  y lo sirve primero, actualizándolo en segundo plano (stale-while-revalidate). Los GET al Apps
-  Script y a frankfurter NO se cachean (dato viejo de dinero es peor que ninguno) y los POST nunca
-  se interceptan.
+- **`sw.js`** — cachea el app shell y lo sirve primero, actualizándolo en segundo plano
+  (stale-while-revalidate). Los GET al Apps Script y a frankfurter NO se cachean (dato viejo de
+  dinero es peor que ninguno) y los POST nunca se interceptan.
+  - **Se registra en la PRIMERA línea del `<script>`, no en `window.onload`.** Ese era el bug de la
+    app de home screen: `load` solo dispara cuando terminaron de bajar TODOS los recursos (fuentes
+    incluidas), y en datos celulares lentos ese evento llega tardísimo o nunca — así que el service
+    worker jamás se registraba. Safari sí lo tenía (instalado con wifi) pero la app de home screen
+    no, porque **iOS 17.4+ le da a las web apps standalone su propio contenedor de almacenamiento**:
+    es un registro aparte que tiene que pasar ahí adentro. Círculo vicioso: lo único que la hacía
+    funcionar sin red no se instalaba porque instalarlo dependía de que la red estuviera buena.
+  - **`CRITICAL` vs `OPTIONAL` en el precache.** `addAll()` es todo-o-nada: un solo recurso lento o
+    caído y el install entero se rechaza, dejando CERO cacheado — justo el escenario que este worker
+    existe para sobrevivir. Solo `./` + `index.html` son obligatorios; íconos y fuentes van con
+    `allSettled` (best-effort) y si faltan los recoge después el fetch handler.
   **Al cambiar index.html conviene subir `VERSION` en sw.js** para que los teléfonos tiren el shell
   viejo de inmediato en vez de esperar al refresh en segundo plano.
 - **Snapshot** — cada lectura buena se guarda en localStorage (`gastos_cache` / `ahorros_cache`).
