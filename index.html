@@ -4,8 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>De Dos · Gastos</title>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Fonts are self-hosted (fonts/*.woff2), NOT pulled from Google.
+       The old <link> to fonts.googleapis.com blocked first paint until a
+       third-party host answered, then chained to a second one (fonts.gstatic.com)
+       for the files — two extra DNS+TLS round trips before anything rendered,
+       which is what left a blank screen on weak cellular.
+       These are the exact same variable-font files Google was serving (latin
+       subset), so nothing changes visually. font-display:swap + the system-font
+       fallbacks in --font-ui/display/mono carry the first frame; the service
+       worker precaches them so later launches need no network at all. -->
+  <style>
+    @font-face {
+      font-family: 'Fraunces'; font-style: normal; font-weight: 400 700; font-display: swap;
+      src: url('fonts/fraunces.woff2') format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    @font-face {
+      font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400 700; font-display: swap;
+      src: url('fonts/jetbrains-mono.woff2') format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    @font-face {
+      font-family: 'Sora'; font-style: normal; font-weight: 300 700; font-display: swap;
+      src: url('fonts/sora.woff2') format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
   <meta name="theme-color" content="#0C0806">
   <!-- "Add to Home Screen" — banknote icon, label "SF", opens standalone -->
   <link rel="icon" href="icon.png">
@@ -862,6 +886,12 @@
     .exp-info { flex: 1; min-width: 0; }
     .exp-desc { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
     .exp-meta { font-size: 10px; color: var(--text-light); }
+    /* queued offline, not on the Sheet yet */
+    .exp-pending {
+      display: inline-block; margin-left: 6px; padding: 1px 5px; border-radius: 5px;
+      background: color-mix(in srgb, var(--warn) 18%, transparent);
+      color: var(--warn); font-size: 9px; font-weight: 700; letter-spacing: 0.2px;
+    }
     .exp-tipo-ic { width: 11px; height: 11px; stroke: var(--primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -1.5px; margin-right: 1px; }
     .exp-right { text-align: right; flex-shrink: 0; }
     .exp-monto { font-family: var(--font-mono); font-size: 15px; font-weight: 700; }
@@ -1166,6 +1196,81 @@
   let data   = [];
   let busy   = false;
 
+  /* ── OFFLINE ──
+   * Two pieces, both localStorage:
+   *   snapshot — the last rows we successfully read, so the app opens with real
+   *              numbers instead of "Sin conexión" when the network is down.
+   *   outbox   — writes that didn't make it out. Registrar always succeeds
+   *              locally; the queue drains by itself when signal comes back.
+   * Reads/writes are wrapped because Safari throws on storage in some private /
+   * low-storage states, and a throw here would kill the whole app.
+   */
+  function lsGet(key, fallback) {
+    try { const v = JSON.parse(localStorage.getItem(key)); return Array.isArray(v) ? v : fallback; }
+    catch (_) { return fallback; }
+  }
+  function lsSet(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (_) { /* full or blocked — not fatal */ }
+  }
+
+  let outbox = lsGet('gastos_outbox', []);
+  const saveOutbox = () => lsSet('gastos_outbox', outbox);
+
+  // A queued write, shaped like the Sheet row it will become, so it can be
+  // rendered and counted next to real rows. The '__p__' Timestamp is what marks
+  // it pending everywhere else.
+  function pendingRow(o) {
+    const p = o.payload;
+    const base = { Timestamp: '__p__' + o.id, Fecha: p.fecha, Monto: p.monto,
+                   Moneda: p.moneda, Quien: p.quien, _pending: true };
+    return o.kind === 'ahorro'
+      ? { ...base, Destino: p.destino, Nota: p.nota }
+      : { ...base, Tipo: p.tipo, Categoria: p.categoria, Emoji: p.emoji, Descripcion: p.descripcion };
+  }
+  const pendingRows = kind => outbox.filter(o => o.kind === kind).map(pendingRow);
+
+  function enqueue(kind, payload) {
+    outbox.push({ id: String(Date.now()) + String(Math.floor(Math.random() * 1000)), kind, payload });
+    saveOutbox();
+  }
+
+  // Drain the queue oldest-first, stopping at the first failure so entries keep
+  // their order and nothing is written twice. Re-entrancy guarded: 'online' and
+  // the visibility handler can both fire at once.
+  let flushing = false;
+  async function flushOutbox() {
+    if (flushing || !outbox.length || !navigator.onLine) return;
+    flushing = true;
+    let sent = 0;
+    try {
+      while (outbox.length) {
+        try { await postToScript(outbox[0].payload); }
+        catch (_) { break; }                     // still no reach — leave the rest queued
+        outbox.shift(); saveOutbox(); sent++;
+      }
+    } finally { flushing = false; }
+
+    if (sent) {
+      toast(`✅ ${sent} ${sent === 1 ? 'registro sincronizado' : 'registros sincronizados'}`);
+      await loadData();
+      await loadAhorros();
+    }
+    return sent;
+  }
+
+  window.addEventListener('online', () => flushOutbox());
+  // iOS suspends the web app instead of closing it — 'online' often never fires,
+  // so re-check every time it comes back to the foreground.
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) flushOutbox(); });
+
+  // fetch with a deadline. Cellular failure mode is a socket that hangs open,
+  // not a clean error — without this the UI sits on "Guardando…" forever.
+  function fetchT(url, opts = {}, ms = 12000) {
+    const ac = new AbortController();
+    const t  = setTimeout(() => ac.abort(), ms);
+    return fetch(url, { ...opts, signal: ac.signal }).finally(() => clearTimeout(t));
+  }
+
   // USD→MXN daily rates, cached across sessions: { rates:{'YYYY-MM-DD':num}, from, thru }
   let fxCache;
   try { fxCache = JSON.parse(localStorage.getItem('gastos_fx')); } catch (_) { fxCache = null; }
@@ -1224,9 +1329,25 @@
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveNavIndicator);
     window.addEventListener('resize', moveNavIndicator);
 
+    // Paint from the last good snapshot + anything still queued BEFORE touching
+    // the network, so the app is usable the instant it opens — and stays usable
+    // if the network never answers. loadData() overwrites this when it lands.
+    data   = lsGet('gastos_cache',  []).concat(pendingRows('gasto'));
+    ahData = lsGet('ahorros_cache', []).concat(pendingRows('ahorro'));
+    if (data.length)   { renderDash(); renderHistory(); }
+    if (ahData.length) { renderAhDestinos(); renderAhorros(); }
+
     // restore the last-active view from localStorage (skip if it was Registrar — already the default)
     const saved = localStorage.getItem('gastos_view');
     if (['dashboard', 'ahorros', 'history'].includes(saved)) showView(saved);
+
+    // Keep our own copy of the app shell so a cold launch never waits on the
+    // network. Relative path → scope is the repo subfolder on GitHub Pages.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+
+    flushOutbox();   // anything written while offline last session goes up now
   }
 
   function showMonthTip(i, pin) {
@@ -1354,14 +1475,22 @@
     const btn = document.getElementById('submit-btn');
     btn.disabled = true; btn.textContent = 'Guardando…';
 
+    const payload = { fecha: fec, monto: mon, moneda: selCur,
+      categoria: CATS[selCat].label, emoji: CATS[selCat].emoji,
+      descripcion: des, quien: who, tipo: selTipo };
+
     try {
-      await postToScript({ fecha: fec, monto: mon, moneda: selCur,
-        categoria: CATS[selCat].label, emoji: CATS[selCat].emoji,
-        descripcion: des, quien: who, tipo: selTipo });
+      if (!navigator.onLine) throw new Error('offline');   // don't wait on a dead radio
+      await postToScript(payload);
       toast('✅ Gasto registrado');
       resetForm();
     } catch (e) {
-      toast('⚠️ No se guardó — revisa tu conexión e intenta otra vez', 'warning');
+      // Never lose the entry: queue it, show it right away, sync when there's signal.
+      enqueue('gasto', payload);
+      data = data.concat(pendingRow(outbox[outbox.length - 1]));
+      renderDash(); renderHistory();
+      toast('📴 Guardado sin conexión — se sube solo');
+      resetForm();
     } finally {
       btn.disabled = false; btn.textContent = 'Registrar gasto';
     }
@@ -1372,7 +1501,7 @@
   // body either way. We don't use no-cors so we can actually see failures:
   // a network drop rejects, and {success:false} from doPost throws.
   async function postToScript(payload) {
-    const res = await fetch(APPS_SCRIPT_URL, {
+    const res = await fetchT(APPS_SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
@@ -1399,17 +1528,23 @@
     if (busy) return;
     busy = true;
     try {
-      const res  = await fetch(APPS_SCRIPT_URL + '?action=getData', { cache: 'no-store' });
+      const res  = await fetchT(APPS_SCRIPT_URL + '?action=getData', { cache: 'no-store' });
       const json = await res.json();
       if (json.success) {
-        data = [...json.data].reverse();
+        const rows = [...json.data].reverse();
+        lsSet('gastos_cache', rows);          // last good snapshot — what we boot from next time
+        data = rows.concat(pendingRows('gasto'));
         renderDash();
         renderHistory();
         // top up USD→MXN rates in the background, then re-render if anything changed
         ensureFxRates().then(changed => { if (changed) renderDash(); });
       }
     } catch (e) {
-      document.getElementById('expense-list').innerHTML =
+      // Offline. Keep whatever we already have on screen (snapshot + queue) and
+      // only show the error when there is genuinely nothing to show.
+      data = lsGet('gastos_cache', []).concat(pendingRows('gasto'));
+      if (data.length) { renderDash(); renderHistory(); }
+      else document.getElementById('expense-list').innerHTML =
         `<div class="empty-state"><span class="ee">⚠️</span><div class="et">Sin conexión</div><div class="es">Revisa tu internet</div></div>`;
     } finally { busy = false; }
   }
@@ -1804,7 +1939,7 @@
           <div class="exp-icon" style="color:${catColor(cat)}"><svg viewBox="0 0 24 24"><use href="#ic-${catIcon(cat)}"/></svg></div>
           <div class="exp-info">
             <div class="exp-desc">${esc(desc)}</div>
-            <div class="exp-meta">${tipo}${esc(e.Categoria||'')} · ${esc(dispName(e.Quien))}</div>
+            <div class="exp-meta">${tipo}${esc(e.Categoria||'')} · ${esc(dispName(e.Quien))}${e._pending ? '<span class="exp-pending">POR SUBIR</span>' : ''}</div>
           </div>
           <div class="exp-right">
             <div class="exp-monto">$${fmt(num(e.Monto))}</div>
@@ -1836,11 +1971,29 @@
     document.getElementById('del-bar-' + i).classList.remove('show');
   }
 
+  // Drop a still-queued write instead of asking the Sheet to delete a row that
+  // was never sent. Returns true if it handled the delete.
+  function dropPending(timestamp) {
+    if (!String(timestamp).startsWith('__p__')) return false;
+    const id = String(timestamp).slice(5);
+    outbox = outbox.filter(o => o.id !== id);
+    saveOutbox();
+    data   = data.filter(e => (e.Timestamp || '') !== timestamp);
+    ahData = ahData.filter(e => (e.Timestamp || '') !== timestamp);
+    return true;
+  }
+
   async function confirmDelete(i, timestamp) {
     // optimistic: remove from UI immediately
     const item = document.getElementById('item-' + i);
     item.style.opacity = '0.4';
     item.style.pointerEvents = 'none';
+
+    if (dropPending(timestamp)) {
+      toast('🗑️ Gasto eliminado');
+      renderHistory(); renderDash();
+      return;
+    }
 
     // remove from local data array by timestamp
     const snapshot = data;
@@ -1878,7 +2031,7 @@
     if (ahBusy) return;
     ahBusy = true;
     try {
-      const res  = await fetch(APPS_SCRIPT_URL + '?action=getAhorros', { cache: 'no-store' });
+      const res  = await fetchT(APPS_SCRIPT_URL + '?action=getAhorros', { cache: 'no-store' });
       const json = await res.json();
       if (json.success) {
         const rows = json.data || [];
@@ -1893,13 +2046,17 @@
           document.getElementById('ah-month').textContent = '';
           return;
         }
-        ahData = [...rows].reverse();
+        const fresh = [...rows].reverse();
+        lsSet('ahorros_cache', fresh);
+        ahData = fresh.concat(pendingRows('ahorro'));
         renderAhDestinos();
         renderAhorros();
         ensureFxRates().then(changed => { if (changed) renderAhorros(); });
       }
     } catch (e) {
-      document.getElementById('ah-list').innerHTML =
+      ahData = lsGet('ahorros_cache', []).concat(pendingRows('ahorro'));
+      if (ahData.length) { renderAhDestinos(); renderAhorros(); }
+      else document.getElementById('ah-list').innerHTML =
         `<div class="empty-state"><span class="ee">⚠️</span><div class="et">Sin conexión</div><div class="es">Revisa tu internet</div></div>`;
     } finally { ahBusy = false; }
   }
@@ -1925,17 +2082,27 @@
 
     const btn = document.getElementById('ah-submit-btn');
     btn.disabled = true; btn.textContent = 'Guardando…';
-    try {
-      await postToScript({ action: 'addAhorro', fecha: fec, monto: mon, moneda: ahCur, destino: dst, nota: nta, quien: who });
-      toast('✅ Aporte registrado');
+    const payload = { action: 'addAhorro', fecha: fec, monto: mon, moneda: ahCur, destino: dst, nota: nta, quien: who };
+    const clearAhForm = () => {
       document.getElementById('ah-monto').value   = '';
       document.getElementById('ah-nota').value    = '';
       document.getElementById('ah-destino').value = '';
       document.getElementById('ah-fecha').value   = todayStr();
       ahSetCurrency('MXN');
+    };
+
+    try {
+      if (!navigator.onLine) throw new Error('offline');
+      await postToScript(payload);
+      toast('✅ Aporte registrado');
+      clearAhForm();
       loadAhorros();
     } catch (e) {
-      toast('⚠️ No se guardó — revisa tu conexión e intenta otra vez', 'warning');
+      enqueue('ahorro', payload);
+      ahData = ahData.concat(pendingRow(outbox[outbox.length - 1]));
+      renderAhDestinos(); renderAhorros();
+      toast('📴 Guardado sin conexión — se sube solo');
+      clearAhForm();
     } finally {
       btn.disabled = false; btn.textContent = 'Registrar aporte';
     }
@@ -1950,6 +2117,13 @@
   async function confirmDeleteAhorro(i, timestamp) {
     const item = document.getElementById('ah-item-' + i);
     item.style.opacity = '0.4'; item.style.pointerEvents = 'none';
+
+    if (dropPending(timestamp)) {
+      toast('🗑️ Aporte eliminado');
+      renderAhDestinos(); renderAhorros();
+      return;
+    }
+
     const snapshot = ahData;
     ahData = ahData.filter(e => (e.Timestamp || '') !== timestamp);
     try {
@@ -2064,7 +2238,8 @@
       const nta  = String(e.Nota || '').trim();
       const ts   = esc(e.Timestamp || '');
       const desc = nta || dst;                                          // la nota es la "descripción"; si no hay, el destino
-      const meta = (nta ? esc(dst) + ' · ' : '') + esc(dispName(e.Quien));
+      const meta = (nta ? esc(dst) + ' · ' : '') + esc(dispName(e.Quien))
+                 + (e._pending ? '<span class="exp-pending">POR SUBIR</span>' : '');
       html += `<div class="exp-item" id="ah-item-${idx}">
         <div class="exp-item-main">
           <div class="exp-icon" style="color:${destColor(dst)}"><svg viewBox="0 0 24 24"><use href="#ic-coins"/></svg></div>

@@ -6,7 +6,7 @@
 Live en: https://fernandojgarciagzz.github.io/expensetracker-fercho-sofi
 
 ## Stack
-- Frontend: HTML/CSS/JS vanilla, un solo archivo (index.html)
+- Frontend: HTML/CSS/JS vanilla, un solo archivo (index.html) + `sw.js` (service worker)
 - Backend: Google Apps Script (actúa como API REST gratuita)
 - DB: Google Sheet llamado "Gastos Fercho & Sofi", pestaña "Gastos"
 - Hosting: GitHub Pages
@@ -47,12 +47,57 @@ https://script.google.com/macros/s/AKfycbz2gocfUYljQRFtCeTl4uwzM8R7JWUP_nMnWoJEk
 - Monedas: MXN y USD por separado
 - **Ahorros** (pestaña aparte, ícono `ic-coins`, totalmente separada de gastos). Orden de la vista: header → formulario "Registrar aporte" (monto + moneda + Destino [input con datalist autocompletado de destinos usados] + nota opcional + fecha + botón) → "Total ahorrado por mes" (barras 6 meses, verde) → "Total ahorrado" (hero, verde --success) + aportes este mes + conteo → "Total por destino" (barras, color por destino vía `destColor()` = hash al palette CAT_COLORS) → "Historial de aportes" (divisores de fecha + borrar; en cada fila la nota es la descripción y el destino va en el meta, ícono `ic-coins` coloreado por destino). Funciones: `loadAhorros / submitAhorro / confirmDeleteAhorro / askDeleteAh / cancelDeleteAh / renderAhorros / renderAhMonthChart / renderAhList / renderAhDestinos / ahSetCurrency / destColor`. `loadAhorros` tiene un guard: si el Apps Script no está re-deployado (devuelve filas de gastos), pinta "Falta re-deployar" en toda la pestaña.
 
+## Offline / datos celulares
+El problema original: sin service worker la app era una página web normal, y GitHub Pages solo deja
+cachear index.html 10 minutos (`cache-control: max-age=600`). Cada arranque en frío tenía que bajar
+todo otra vez desde 3 hosts distintos antes de pintar nada, y el `<link>` de Google Fonts bloqueaba
+el primer render hasta que `fonts.googleapis.com` contestara (y ése encadenaba a `fonts.gstatic.com`
+para los archivos). En wifi eso es invisible; en celular débil es pantalla en blanco.
+
+Peso de la carga inicial, medido:
+
+| | antes | ahora |
+|---|---|---|
+| index.html (gzip) | 27 KB | 27 KB |
+| CSS de Google Fonts | 17 KB | — (eliminado) |
+| fuentes (subset latin) | 129 KB desde gstatic | 129 KB propias, precacheadas |
+| icon.png | 76 KB | 12 KB |
+| **total / hosts** | **~249 KB, 3 hosts** | **~168 KB, 1 host** |
+
+Y sobre todo: **después del primer arranque son 0 requests de red para abrir la app.**
+
+- **`sw.js`** — cachea el app shell (`./`, `index.html`, `icon.png`, `manifest.json`, `fonts/*.woff2`)
+  y lo sirve primero, actualizándolo en segundo plano (stale-while-revalidate). Los GET al Apps
+  Script y a frankfurter NO se cachean (dato viejo de dinero es peor que ninguno) y los POST nunca
+  se interceptan.
+  **Al cambiar index.html conviene subir `VERSION` en sw.js** para que los teléfonos tiren el shell
+  viejo de inmediato en vez de esperar al refresh en segundo plano.
+- **Snapshot** — cada lectura buena se guarda en localStorage (`gastos_cache` / `ahorros_cache`).
+  `init()` pinta desde ahí antes de tocar la red, así la app abre con números reales aunque no haya
+  señal. "Sin conexión" solo sale si de verdad no hay nada que mostrar.
+- **Outbox** (`gastos_outbox`) — si el POST falla (o `navigator.onLine` es false) el gasto/aporte se
+  encola y se pinta de una vez con la etiqueta **POR SUBIR** (`.exp-pending`, `Timestamp` = `__p__<id>`).
+  Registrar nunca falla. La cola se drena sola en `online`, al volver a primer plano
+  (`visibilitychange` — en iOS la app se suspende y `online` casi nunca dispara) y al arrancar.
+  Se manda en orden y se para al primer error, así nada se duplica ni se reordena.
+  Funciones: `lsGet / lsSet / enqueue / pendingRow / pendingRows / flushOutbox / dropPending / fetchT`.
+- Borrar una fila `__p__` la saca del outbox (`dropPending`), no le pide nada al Sheet.
+- Los borrados de filas reales siguen siendo online-only (no se encolan).
+- **`fetchT(url, opts, ms)`** — fetch con AbortController y 12 s de límite. En celular la falla
+  típica es un socket colgado, no un error limpio; sin esto la UI se quedaba en "Guardando…".
+- **Fuentes self-hosted** en `fonts/*.woff2` con `@font-face` inline en el `<head>` — ya no se pide
+  nada a Google. Son los mismos archivos variable-font (subset latin) que servía gstatic, así que
+  no cambia nada visual. Ver `fonts/README.md`; **ojo con el rango de peso** (`font-weight: 400 700`),
+  si se declara un solo peso el navegador finge las negritas. `font-display: swap` + los fallbacks de
+  `--font-ui/display/mono` cubren el primer frame.
+
 ## Íconos
 SVG sprite inline en el HTML — no usa Lucide CDN. Todos los íconos están definidos como <symbol> en el <head>.
 
 ## "Agregar a inicio" (PWA básico)
 - En iOS (Compartir → Agregar a inicio) se instala como app: ícono de billete, etiqueta "SF", abre en modo standalone (sin la barra de Safari).
-- `icon.png` (512×512) es el ícono real; se generó de `icon.svg` con `qlmanage -t -s 512 -o . icon.svg` (no hay rsvg/cairosvg/IM en la máquina). Si cambias `icon.svg`, re-genera el PNG igual.
+- `icon.png` (512×512) es el ícono real; se generó de `icon.svg` con `qlmanage -t -s 512 -o . icon.svg` (no hay rsvg/cairosvg/IM en la máquina). Si cambias `icon.svg`, re-genera el PNG igual — **y vuélvelo a cuantizar**: qlmanage escupe RGBA de 8 bits (76 KB) para un ícono que es un degradado plano con trazos blancos. Con paleta de 128 colores baja a 12 KB sin diferencia visible (drift máximo 6/255):
+  `python3 -c "from PIL import Image; Image.open('icon.png').convert('RGB').quantize(colors=128).save('icon.png', optimize=True)"`
 - Tags relevantes en el `<head>`: `apple-touch-icon`, `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-mobile-web-app-title="SF"`, y `manifest.json` (para Android/Chrome). `theme_color`/`background_color` del manifest = `#0C0806` (el bg del tema oscuro, default de la app).
 - Estos archivos (icon.png, manifest.json) viven en la raíz del repo porque GitHub Pages los sirve desde ahí, mismo origen que `index.html`.
 
